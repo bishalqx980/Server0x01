@@ -164,8 +164,7 @@ def get_readable_message():
         else:
             msg += f"\n<b>├ Size</b>: {download.size()}"
         msg += f"\n<b>├ Elapsed</b>: {get_readable_time(time() - download.extra_details['startTime'])}"
-        msg += f"\n<b>├ ❗ Click/tap below to cancel the task !!</b>"
-        msg += f"\n<b>└ </b>/{BotCommands.CancelMirror}_{download.gid()}<>\n\n"
+        msg += f"\n<b>└ </b><code>/{BotCommands.CancelMirror} {download.gid()}</code>\n\n"
     if len(msg) == 0:
         return None, None
     dl_speed = 0

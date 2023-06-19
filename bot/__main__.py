@@ -48,7 +48,7 @@ async def stats(_, message):
             f'<b>• CPU usage  :</b><code> {cpuUsage}%</code>\n'\
             f'<b>• RAM usage  :</b><code> {mem_p}%</code>\n'\
             f'<b>• Disk usage :</b><code> {disk}%</code>\n'\
-            f'<b>• Disk space :</b><code> {get_readable_file_size(free)}*out_of*{get_readable_file_size(total)}</code>\n\n'\
+            f'<b>• Disk space :</b><code> {get_readable_file_size(free)}⋱⋰{get_readable_file_size(total)}</code>\n\n'\
             
     if config_dict['SHOW_LIMITS']:
         DIRECT_LIMIT = config_dict['DIRECT_LIMIT']
