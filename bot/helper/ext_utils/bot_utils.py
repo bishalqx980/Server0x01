@@ -165,7 +165,7 @@ def get_readable_message():
             msg += f"\n<b>├ Size</b>: {download.size()}"
         msg += f"\n<b>├ Elapsed</b>: {get_readable_time(time() - download.extra_details['startTime'])}"
         msg += f"\n<b>├ ⚠ click/tap below to cancel the task !!</b>"
-        msg += f"\n<b>└ </b><a href='/{BotCommands.CancelMirror}_{download.gid()}'>/{BotCommands.CancelMirror}_{download.gid()}</a>\n\n"
+        msg += f"\n<b>└ </b>/{BotCommands.CancelMirror[0]}_{download.gid()}\n\n"
     if len(msg) == 0:
         return None, None
     dl_speed = 0
@@ -420,7 +420,7 @@ async def set_commands(client):
                        'Select files to download only torrents'),
             BotCommand(f'{BotCommands.CategorySelect}',
                        'Select category to upload only mirror'),
-            BotCommand(f'{BotCommands.CancelMirror}', 'Cancel a Task'),
+            BotCommand(f'{BotCommands.CancelMirror[0]}', 'Cancel a Task'),
             BotCommand(
                 f'{BotCommands.CancelAllCommand[0]}', f'Cancel all tasks which added by you or {BotCommands.CancelAllCommand[1]} to in bots.'),
             BotCommand(f'{BotCommands.ListCommand}', 'Search in Drive'),

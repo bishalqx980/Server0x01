@@ -43,12 +43,12 @@ async def stats(_, message):
     osUptime = get_readable_time(time() - boot_time())
     cpuUsage = cpu_percent(interval=0.5)
     stats = f'<b><u>SYSTEM INFO</u></b>\n\n'\
-            f'<b>• Bot uptime :</b><code> {currentTime}</code>\n'\
-            f'<b>• Sys uptime :</b><code> {osUptime}</code>\n'\
-            f'<b>• CPU usage  :</b><code> {cpuUsage}%</code>\n'\
-            f'<b>• RAM usage  :</b><code> {mem_p}%</code>\n'\
-            f'<b>• Disk usage :</b><code> {disk}%</code>\n'\
-            f'<b>• Disk space :</b><code> {get_readable_file_size(free)}/{get_readable_file_size(total)}</code>\n\n'\
+            f'<code>• Bot uptime :</code> {currentTime}\n'\
+            f'<code>• Sys uptime :</code> {osUptime}\n'\
+            f'<code>• CPU usage  :</code> {cpuUsage}%\n'\
+            f'<code>• RAM usage  :</code> {mem_p}%\n'\
+            f'<code>• Disk usage :</code> {disk}%\n'\
+            f'<code>• Disk space :</code> {get_readable_file_size(free)}/{get_readable_file_size(total)}\n\n'\
             
     if config_dict['SHOW_LIMITS']:
         DIRECT_LIMIT = config_dict['DIRECT_LIMIT']
@@ -68,14 +68,14 @@ async def stats(_, message):
         ytdlp_limit = '∞' if YTDLP_LIMIT == '' else f'{YTDLP_LIMIT}GB/Link'
         direct_limit = '∞' if DIRECT_LIMIT == '' else f'{DIRECT_LIMIT}GB/Link'
         stats += f'<b><u>LIMITATIONS</u></b>\n\n'\
-                f'<b>• Torrent    :</b><code> {torrent_limit}</code>\n'\
-                f'<b>• Gdrive     :</b><code> {gdrive_limit}</code>\n'\
-                f'<b>• Ytdlp      :</b><code> {ytdlp_limit}</code>\n'\
-                f'<b>• Direct     :</b><code> {direct_limit}</code>\n'\
-                f'<b>• Leech      :</b><code> {leech_limit}</code>\n'\
-                f'<b>• Clone      :</b><code> {clone_limit}</code>\n'\
-                f'<b>• Mega       :</b><code> {mega_limit}</code>\n'\
-                f'<b>• User tasks :</b><code> {user_task}</code>\n\n'\
+                f'<code>• Torrent    :</code> {torrent_limit}\n'\
+                f'<code>• Gdrive     :</code> {gdrive_limit}\n'\
+                f'<code>• Ytdlp      :</code> {ytdlp_limit}\n'\
+                f'<code>• Direct     :</code> {direct_limit}\n'\
+                f'<code>• Leech      :</code> {leech_limit}\n'\
+                f'<code>• Clone      :</code> {clone_limit}\n'\
+                f'<code>• Mega       :</code> {mega_limit}\n'\
+                f'<code>• User tasks :</code> {user_task}\n\n'\
                 f'<b>• @Server0x01 ツ</b>'
     await sendMessage(message, stats)
 
@@ -144,7 +144,7 @@ NOTE: Try each command without any argument to see more detalis.
 /{BotCommands.BotSetCommand} [query]: Bot settings.
 /{BotCommands.BtSelectCommand}: Select files from torrents by gid or reply.
 /{BotCommands.CategorySelect}: Change upload category for Google Drive.
-/{BotCommands.CancelMirror}: Cancel task by gid or reply.
+/{BotCommands.CancelMirror[0]}: Cancel task by gid or reply.
 /{BotCommands.CancelAllCommand[0]} : Cancel all tasks which added by you {BotCommands.CancelAllCommand[1]} to in bots.
 /{BotCommands.ListCommand} [query]: Search in Google Drive(s).
 /{BotCommands.SearchCommand} [query]: Search for torrents with API.
