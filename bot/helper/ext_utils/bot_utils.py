@@ -132,7 +132,7 @@ def progress_bar(pct):
     p_str += '□' * (10 - len(p_str))
     return p_str
 
-def get_readable_message():
+def get_readable_message(self):
     msg = ''
     button = None
     STATUS_LIMIT = config_dict['STATUS_LIMIT']
@@ -142,8 +142,8 @@ def get_readable_message():
         globals()['STATUS_START'] = STATUS_LIMIT * (PAGES - 1)
         globals()['PAGE_NO'] = PAGES
     for download in list(download_dict.values())[STATUS_START:STATUS_LIMIT+STATUS_START]:
-        msg += f"<i>{escape(f'{download.name()}')}\n"
-        msg += f"by {download.extra_details['source']}</i>\n\n"
+        msg += f"<b><u>Task </u>:{escape(f'{download.name()}')}</b>\n\n"
+        msg += f"<b>Started by </b>:{self.tag}\n\n"
         msg += f"<b>┌ {download.status()} with {download.engine}</b>"
         if download.status() not in [MirrorStatus.STATUS_SPLITTING, MirrorStatus.STATUS_SEEDING]:
             msg += f"\n<b>├ {progress_bar(download.progress())}</b> {download.progress()}"
@@ -164,7 +164,8 @@ def get_readable_message():
         else:
             msg += f"\n<b>├ Size</b>: {download.size()}"
         msg += f"\n<b>├ Elapsed</b>: {get_readable_time(time() - download.extra_details['startTime'])}"
-        msg += f"\n<b>└ </b><code>/{BotCommands.CancelMirror} {download.gid()}</code>\n\n"
+        msg += f"\n<b>├ ⚠ click/tap below to cancel the task !!</b>"
+        msg += f"\n<b>└ </b><a href='/{BotCommands.CancelMirror}_{download.gid()}'>/{BotCommands.CancelMirror}_{download.gid()}</a>\n\n"
     if len(msg) == 0:
         return None, None
     dl_speed = 0
@@ -343,7 +344,7 @@ def checking_access(user_id, button=None):
         if button is None:
             button = ButtonMaker()
         button.ubutton('Collect token', short_url(f'https://telegram.me/{bot_name}?start={token}'))
-        return f'Your token has expired, please collect a new token.\n\n<b>It will expire after {time_str}</b>', button
+        return f'Your token has expired, please collect a new token. Thanks :) \n\n<b>It will expire after {time_str}</b>\n\n@Server0x01', button
     return None, button
 
 def format_validity_time(seconds):
