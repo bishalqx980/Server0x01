@@ -132,7 +132,7 @@ def progress_bar(pct):
     p_str += '□' * (10 - len(p_str))
     return p_str
 
-def get_readable_message(self):
+def get_readable_message():
     msg = ''
     button = None
     STATUS_LIMIT = config_dict['STATUS_LIMIT']
@@ -143,7 +143,7 @@ def get_readable_message(self):
         globals()['PAGE_NO'] = PAGES
     for download in list(download_dict.values())[STATUS_START:STATUS_LIMIT+STATUS_START]:
         msg += f"<b><u>Task </u>:{escape(f'{download.name()}')}</b>\n\n"
-        msg += f"<b>Started by </b>:{self.tag}\n\n"
+        msg += f"<b>Started by </b>: {download.extra_details['source']}\n\n"
         msg += f"<b>┌ {download.status()} with {download.engine}</b>"
         if download.status() not in [MirrorStatus.STATUS_SPLITTING, MirrorStatus.STATUS_SEEDING]:
             msg += f"\n<b>├ {progress_bar(download.progress())}</b> {download.progress()}"
