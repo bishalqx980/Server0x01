@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import create_subprocess_exec, create_subprocess_shell, sleep
 from collections import OrderedDict
 from functools import partial
@@ -37,11 +38,11 @@ from bot.modules.torrent_search import initiate_search_tools
 START = 0
 STATE = 'view'
 handler_dict = {}
-default_values = {'AUTO_DELETE_MESSAGE_DURATION': 120,
+default_values = {'AUTO_DELETE_MESSAGE_DURATION': 30,
                   'DOWNLOAD_DIR': '/usr/src/app/downloads/',
                   'LEECH_SPLIT_SIZE': MAX_SPLIT_SIZE,
                   'RSS_DELAY': 900,
-                  'STATUS_UPDATE_INTERVAL': 15,
+                  'STATUS_UPDATE_INTERVAL': 10,
                   'SEARCH_LIMIT': 0,
                   'UPSTREAM_BRANCH': 'main'}
 
@@ -149,7 +150,7 @@ async def load_config():
 
     STATUS_UPDATE_INTERVAL = environ.get('STATUS_UPDATE_INTERVAL', '')
     if len(STATUS_UPDATE_INTERVAL) == 0:
-        STATUS_UPDATE_INTERVAL = 15
+        STATUS_UPDATE_INTERVAL = 10
     else:
         STATUS_UPDATE_INTERVAL = int(STATUS_UPDATE_INTERVAL)
     if len(download_dict) != 0:
@@ -163,7 +164,7 @@ async def load_config():
     AUTO_DELETE_MESSAGE_DURATION = environ.get(
         'AUTO_DELETE_MESSAGE_DURATION', '')
     if len(AUTO_DELETE_MESSAGE_DURATION) == 0:
-        AUTO_DELETE_MESSAGE_DURATION = 120
+        AUTO_DELETE_MESSAGE_DURATION = 30
     else:
         AUTO_DELETE_MESSAGE_DURATION = int(AUTO_DELETE_MESSAGE_DURATION)
 
@@ -171,6 +172,9 @@ async def load_config():
     if len(YT_DLP_OPTIONS) == 0:
         YT_DLP_OPTIONS = ''
 
+    SHOW_LIMITS = environ.get('SHOW_LIMITS', '')
+    SHOW_LIMITS = SHOW_LIMITS.lower() == 'true'
+    
     SEARCH_LIMIT = environ.get('SEARCH_LIMIT', '')
     SEARCH_LIMIT = 0 if len(SEARCH_LIMIT) == 0 else int(SEARCH_LIMIT)
 
@@ -332,9 +336,6 @@ async def load_config():
     if not STOP_DUPLICATE_TASKS and DATABASE_URL:
         await DbManger().clear_download_links()
 
-    DISABLE_DRIVE_LINK = environ.get('DISABLE_DRIVE_LINK', '')
-    DISABLE_DRIVE_LINK = DISABLE_DRIVE_LINK.lower() == 'true'
-
     DISABLE_LEECH = environ.get('DISABLE_LEECH', '')
     DISABLE_LEECH = DISABLE_LEECH.lower() == 'true'
 
@@ -470,6 +471,7 @@ async def load_config():
         "SEARCH_API_LINK": SEARCH_API_LINK,
         "SEARCH_LIMIT": SEARCH_LIMIT,
         "SEARCH_PLUGINS": SEARCH_PLUGINS,
+        "SHOW_LIMITS": SHOW_LIMITS,
         "STATUS_LIMIT": STATUS_LIMIT,
         "STATUS_UPDATE_INTERVAL": STATUS_UPDATE_INTERVAL,
         "STOP_DUPLICATE": STOP_DUPLICATE,
@@ -498,7 +500,6 @@ async def load_config():
         "ENABLE_RATE_LIMIT": ENABLE_RATE_LIMIT,
         "ENABLE_MESSAGE_FILTER": ENABLE_MESSAGE_FILTER,
         "STOP_DUPLICATE_TASKS": STOP_DUPLICATE_TASKS,
-        "DISABLE_DRIVE_LINK": DISABLE_DRIVE_LINK,
         "SET_COMMANDS": SET_COMMANDS,
         "DISABLE_LEECH": DISABLE_LEECH,
         "REQUEST_LIMITS": REQUEST_LIMITS,
@@ -853,7 +854,7 @@ async def update_private_file(_, message, pre_message):
             await sendMessage(message, msg, buttons.build_menu(2))
         else:
             await message.delete()
-    if file_name == 'rclone.conf':
+    if file_name == 'rcl.conf':
         await rclone_serve_booter()
     await update_buttons(pre_message)
     if DATABASE_URL and file_name != 'config.env':
@@ -1014,17 +1015,12 @@ async def edit_bot_settings(client, query):
         rfunc = partial(update_buttons, message)
         await event_handler(client, query, pfunc, rfunc, True)
     elif data[1] == 'editvar' and STATE == 'edit':
-        value = config_dict[data[2]]
-        if value and data[2] in ['OWNER_ID'] and not await CustomFilters.owner(client, query):
-            value = 'Only owner can edit this!'
-            await query.answer(f'{value}', show_alert=True)
-        else:
-            handler_dict[message.chat.id] = False
-            await query.answer()
-            await update_buttons(message, data[2], data[1])
-            pfunc = partial(edit_variable, pre_message=message, key=data[2])
-            rfunc = partial(update_buttons, message, 'var')
-            await event_handler(client, query, pfunc, rfunc)
+        handler_dict[message.chat.id] = False
+        await query.answer()
+        await update_buttons(message, data[2], data[1])
+        pfunc = partial(edit_variable, pre_message=message, key=data[2])
+        rfunc = partial(update_buttons, message, 'var')
+        await event_handler(client, query, pfunc, rfunc)
     elif data[1] == 'editvar' and STATE == 'view':
         value = config_dict[data[2]]
         if value and data[2] in ['DATABASE_URL', 'TELEGRAM_API', 'TELEGRAM_HASH', 'UPSTREAM_REPO',
