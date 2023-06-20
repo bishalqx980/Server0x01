@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from asyncio import sleep
 from datetime import datetime, timedelta, timezone
 from time import time
@@ -12,7 +11,7 @@ from bot import (LOGGER, Interval, bot, bot_name, cached_dict, categories_dict,
                  config_dict, download_dict_lock, status_reply_dict,
                  status_reply_dict_lock, user)
 from bot.helper.ext_utils.bot_utils import (get_readable_message, setInterval,
-                                            sync_to_async)
+                                            get_readable_file_size, sync_to_async)
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.exceptions import TgLinkException
 
@@ -115,8 +114,7 @@ async def get_tg_link_content(link):
         msg = re_match(
             r"tg:\/\/openmessage\?user_id=([0-9]+)&message_id=([0-9]+)", link)
         if not user:
-            raise TgLinkException(
-                'USER_SESSION_STRING required for this private link!')
+            raise TgLinkException('USER_SESSION_STRING required for this private link!')
 
     chat = msg.group(1)
     msg_id = int(msg.group(2))
@@ -137,8 +135,7 @@ async def get_tg_link_content(link):
         try:
             user_message = await user.get_messages(chat_id=chat, message_ids=msg_id)
         except Exception as e:
-            raise TgLinkException(
-                f"You don't have access to this chat!. ERROR: {e}") from e
+            raise TgLinkException(f"You don't have access to this chat!. ERROR: {e}") from e
         if not user_message.empty:
             return user_message, 'user'
         else:
@@ -146,8 +143,7 @@ async def get_tg_link_content(link):
     elif not private:
         return message, 'bot'
     else:
-        raise TgLinkException(
-            "Bot can't download from GROUPS without joining!")
+        raise TgLinkException("Bot can't download from GROUPS without joining!")
 
 
 async def update_all_messages(force=False):
@@ -186,8 +182,7 @@ async def sendStatusMessage(msg):
         message.text = progress
         status_reply_dict[chat_id] = [message, time()]
         if not Interval:
-            Interval.append(setInterval(
-                config_dict['STATUS_UPDATE_INTERVAL'], update_all_messages))
+            Interval.append(setInterval(config_dict['STATUS_UPDATE_INTERVAL'], update_all_messages))
 
 
 async def user_info(client, userId):
@@ -205,9 +200,8 @@ async def isBot_canDm(message, dmMode, isLeech=False, button=None):
     if user.status == user.status.LONG_AGO:
         if button is None:
             button = ButtonMaker()
-        _msg = "You didn't START the bot in DM"
-        button.ubutton(
-            "Start Bot", f"https://t.me/{bot_name}?start=start", 'header')
+        _msg = "You need to <b>Start</b> me in <b>DM</b>."
+        button.ubutton("Start Me", f"https://t.me/{bot_name}?start=start", 'header')
         return _msg, button
     return 'BotStarted', button
 
@@ -236,13 +230,14 @@ async def sendLogMessage(message, link, tag):
             if not reply_to.text:
                 caption = ''
                 if isSuperGroup:
-                    caption += f'<b><a href="{message.link}">Source</a></b> | '
-                caption += f'<b>#cc</b>: {tag} (<code>{message.from_user.id}</code>)'
+                    caption+=f'<b><a href="{message.link}">Source</a></b> | '
+                caption+=f'<b>Added by</b>: {tag}\n<b>User ID</b>: <code>{message.from_user.id}</code>'
                 return await reply_to.copy(log_chat, caption=caption)
         msg = ''
         if isSuperGroup:
-            msg += f'<b><a href="{message.link}">Source</a></b>: '
-        msg += f'<code>{link}</code>\n\n<b>#cc</b>: {tag} (<code>{message.from_user.id}</code>)'
+            msg+=f'\n\n<b><a href="{message.link}">Source Link</a></b>: '
+        msg += f'<code>{link}</code>\n\n<b>Added by</b>: {tag}\n'
+        msg += f'<b>User ID</b>: <code>{message.from_user.id}</code>'
         return await message._client.send_message(log_chat, msg, disable_web_page_preview=True)
     except FloodWait as r:
         LOGGER.warning(str(r))
@@ -294,9 +289,9 @@ async def forcesub(message, ids, button=None):
     if join_button:
         if button is None:
             button = ButtonMaker()
-        _msg = "You haven't joined our channel yet!"
+        _msg = f"You need to join our channel to use me."
         for key, value in join_button.items():
-            button.ubutton(f'Join {key}', value, 'footer')
+            button.ubutton(f'{key}', value, 'footer')
     return _msg, button
 
 
@@ -307,23 +302,22 @@ async def message_filter(message):
     if reply_to := message.reply_to_message:
         if reply_to.forward_date:
             await deleteMessage(reply_to)
-            _msg = "Can't mirror or leech forward messages."
+            _msg = "You can't mirror or leech forward messages."
         elif reply_to.reply_markup:
             await deleteMessage(reply_to)
-            _msg = "Can't mirror or leech messages with buttons."
+            _msg = "You can't mirror or leech messages with buttons."
         elif reply_to.caption:
             await deleteMessage(reply_to)
-            _msg = "Can't mirror or leech with captions text."
+            _msg = "You can't mirror or leech with captions text."
     elif message.reply_markup:
         await deleteMessage(message)
-        _msg = "Can't mirror or leech messages with buttons."
+        _msg = "You can't mirror or leech messages with buttons."
     elif message.forward_date:
         await deleteMessage(message)
-        _msg = "Can't mirror or leech forward messages."
+        _msg = "You can't mirror or leech forward messages."
     if _msg:
         message.id = None
         return _msg
-
 
 async def delete_links(message):
     if config_dict['DELETE_LINKS']:
@@ -397,7 +391,7 @@ async def request_limiter(message=None, query=None):
     current_time = time()
     if userid in warned_users:
         time_between = current_time - warned_users[userid]['time']
-        if time_between > 60:
+        if time_between > 69:
             warned_users[userid]['warn'] = 0
         elif time_between < 3:
             warned_users[userid]['warn'] += 1
@@ -411,6 +405,6 @@ async def request_limiter(message=None, query=None):
         return True
     if warned_users[userid]['warn'] >= LIMITS-1:
         if query:
-            await query.answer("Spam detected! i will mute you for 60 seconds.", show_alert=True)
+            await query.answer("Oops, Spam detected! I will mute you for 69 seconds.", show_alert=True)
         else:
-            await sendMessage(message, "Spam detected! i will mute you for 60 seconds.")
+            await sendMessage(message, "Oops, Spam detected! I will mute you for 69 seconds.")
