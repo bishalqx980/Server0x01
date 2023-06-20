@@ -154,10 +154,8 @@ async def _auto_cancel(msg, msg_id):
 
 bot.add_handler(MessageHandler(cancel_mirror, filters=regex(
     f"^/{BotCommands.CancelMirror[0]}(_\w+)?(?!all)") & CustomFilters.authorized))
-    '''
-bot.add_handler(MessageHandler(cancel_mirror, filters=command(
-    BotCommands.CancelMirror) & CustomFilters.authorized))
-    '''
+#bot.add_handler(MessageHandler(cancel_mirror, filters=command(
+    #BotCommands.CancelMirror) & CustomFilters.authorized))
 bot.add_handler(MessageHandler(cancell_all_buttons, filters=command(
     BotCommands.CancelAllCommand) & CustomFilters.authorized))
 bot.add_handler(CallbackQueryHandler(
