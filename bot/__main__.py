@@ -231,7 +231,7 @@ async def main():
         BotCommands.HelpCommand) & CustomFilters.authorized))
     bot.add_handler(MessageHandler(stats, filters=command(
         BotCommands.StatsCommand) & CustomFilters.authorized))
-    await bot.send_message(chat_id=-1001662297550, text='<b>Bot Started !!</b>')
+    await bot.send_message(chat_id=-1001846841791, text='<b>Bot Started !!</b>')
     LOGGER.info("Bot Started!")
     signal(SIGINT, exit_clean_up)
 
