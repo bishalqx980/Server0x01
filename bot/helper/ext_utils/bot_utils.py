@@ -384,7 +384,7 @@ def checking_access(user_id, button=None):
         if button is None:
             button = ButtonMaker()
         button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
-        return 'Your <b>Token</b> is expired. Get a new one.', button
+        return 'Your <b>Token</b> is expired. Get a new one. Thanks :)\n\n<code>/token</code> - to know how to generate token ↩', button
     return None, button
 
 

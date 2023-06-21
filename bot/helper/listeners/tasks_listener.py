@@ -393,12 +393,12 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManger().rm_complete_task(self.message.link)
         LOGGER.info(f'Done Uploading {name}')
-        lmsg = f'<b><i>{escape(name)}</i></b>'
-        lmsg += f'\n<b>Req By</b>: <i>{self.tag}</i>'
-        gmsg = f'Hey <b>{self.tag}</b>!\nYour job is done.'
-        msg = f'\n\n<b>Size</b>: <i>{get_readable_file_size(size)}</i>'
-        msg += f"\n<b>Elapsed</b>: <i>{get_readable_time(time() - self.extra_details['startTime'])}</i>"
-        msg += f"\n<b>Upload</b>: <i>{self.extra_details['mode']}</i>"
+        lmsg = f'<b><u>Task:</u> {escape(name)}</b>'
+        lmsg += f'\n\n<b>Req by</b>: <b>{self.tag}</b>'
+        gmsg = f'Hey <b>{self.tag}</b>!\nYour job is done.\n\n'
+        msg = f'<code>Size    :</code> <b>{get_readable_file_size(size)}</b>\n'
+        msg += f"<code>Elapsed :</code> <b>{get_readable_time(time() - self.extra_details['startTime'])}</b>\n"
+        msg += f"<code>Upload  :</code> <b>{self.extra_details['mode']}</b>\n"
         _msg = '' if rclonePath == '' else f'\n\n<b>Path</b>: <code>{rclonePath}</code>'
         msg_ = '\n\n<b><i>Links has been sent in your DM.</i></b>'
         buttons = ButtonMaker()
@@ -485,9 +485,9 @@ class MirrorLeechListener:
                         share_url = f'{INDEX_URL}/{url_path}'
                         if mime_type == "Folder":
                             share_url += '/'
-                            buttons.ubutton("📁 Direct Link", share_url)
+                            buttons.ubutton("📁 Download", share_url)
                         else:
-                            buttons.ubutton("🔗 Direct Link", share_url)
+                            buttons.ubutton("📁 Download", share_url)
                             if mime_type.startswith(('image', 'video', 'audio')):
                                 share_urls = f'{INDEX_URL}/{url_path}?a=view'
                                 buttons.ubutton("🌐 View Link", share_urls)
