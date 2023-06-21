@@ -102,7 +102,7 @@ async def stats(_, message):
             f'<b><u>⋙ Bot Limits</u></b>\n' \
             f'<code>Torrent   :</code> <b>{TOR} GB</b>\n' \
             f'<code>G-Drive   :</code> <b>{GDL} GB</b>\n' \
-            f'<code>Yt-Dlp    :</code> <b>{YTD} <b>GB</b>\n' \
+            f'<code>Yt-Dlp    :</code> <b>{YTD} GB</b>\n' \
             f'<code>Direct    :</code> <b>{DIR} GB</b>\n' \
             f'<code>Clone     :</code> <b>{CLL} GB</b>\n' \
             f'<code>Leech     :</code> <b>{TGL} GB</b>\n' \
