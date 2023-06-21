@@ -71,41 +71,46 @@ async def stats(_, message):
     UMT = 'Unlimited' if config_dict['USER_MAX_TASKS'] == '' else config_dict['USER_MAX_TASKS']
     BMT = 'Unlimited' if config_dict['QUEUE_ALL'] == '' else config_dict['QUEUE_ALL']
 
-    stats = f'<b><i><u>Zee Bot Statistics</u></i></b>\n\n'\
-            f'<b><i><u>Repo Info</u></i></b>\n' \
-            f'<b>Updated:</b> <code>{last_commit}</code>\n' \
-            f'<b>Version:</b> <code>{version}</code>\n' \
-            f'<b>Change Log:</b> <code>{change_log}</code>\n\n' \
-            f'<b><i><u>Bot Info</u></i></b>\n' \
-            f'<b>SYS UPTM:</b> <code>{sysTime}</code>\n' \
-            f'<b>BOT UPTM:</b> <code>{botTime}</code>\n' \
-            f'<b>BOT Restart:</b> <code>{res_time}</code>\n\n' \
-            f'<b>CPU:</b> <code>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</code>\n' \
-            f'<b>CPU Total Core(s):</b> <code>{cpu_count(logical=True)}</code>\n' \
-            f'<b>P-Core(s):</b> <code>{cpu_count(logical=False)}</code> | <b>V-Core(s):</b> <code>{v_core}</code>\n' \
-            f'<b>Frequency:</b> <code>{cpu_freq(percpu=False).current / 1000:.2f} GHz</code>\n\n' \
-            f'<b>RAM:</b> <code>{get_progress_bar_string(mem_p)} {mem_p}%</code>\n' \
-            f'<b>RAM In Use:</b> <code>{get_readable_file_size(memory.used)}</code> [{mem_p}%]\n' \
-            f'<b>Total:</b> <code>{get_readable_file_size(memory.total)}</code> | <b>Free:</b> <code>{get_readable_file_size(memory.available)}</code>\n\n' \
-            f'<b>SWAP:</b> <code>{get_progress_bar_string(swap.percent)} {swap.percent}%</code>\n' \
-            f'<b>SWAP In Use:</b> <code>{get_readable_file_size(swap.used)}</code> [{swap.percent}%]\n' \
-            f'<b>Allocated</b> <code>{get_readable_file_size(swap.total)}</code> | <b>Free:</b> <code>{get_readable_file_size(swap.free)}</code>\n\n' \
-            f'<b>DISK:</b> <code>{get_progress_bar_string(disk)} {disk}%</code>\n' \
-            f'<b>Drive In Use:</b> <code>{used}</code> [{disk}%]\n' \
-            f'<b>Total:</b> <code>{total}</code> | <b>Free:</b> <code>{free}</code>\n\n' \
-            f'<b>UL:</b> <code>{sent}</code> | <b>DL:</b> <code>{recv}</code>\n\n' \
-            f'<b><i><u>Bot Limits</u></i></b>\n' \
-            f'<code>Torrent   : {TOR}</code> <b>GB</b>\n' \
-            f'<code>G-Drive   : {GDL}</code> <b>GB</b>\n' \
-            f'<code>Yt-Dlp    : {YTD}</code> <b>GB</b>\n' \
-            f'<code>Direct    : {DIR}</code> <b>GB</b>\n' \
-            f'<code>Clone     : {CLL}</code> <b>GB</b>\n' \
-            f'<code>Leech     : {TGL}</code> <b>GB</b>\n' \
-            f'<code>MEGA      : {MGA}</code> <b>GB</b>\n' \
-            f'<code>User Tasks: {UMT}</code>\n' \
-            f'<code>Bot Tasks : {BMT}</code>'
+    stats = f'<b><u>@Server0x01 Statistics</u></b>\n\n'\
+            f'<b><u>⋙ Repo Info</u></b>\n' \
+            f'<code>Updated   :</code> <b>{last_commit}</b>\n' \
+            f'<code>Version   :</code> <b>{version}</b>\n' \
+            f'<code>Change Log:</code> <b>{change_log}</b>\n\n' \
+            f'<b><u>⋙ Bot Info</u></b>\n' \
+            f'<code>SYS Uptime:</code> <b>{sysTime}</b>\n' \
+            f'<code>BOT Uptime:</code> <b>{botTime}</b>\n' \
+            f'<code>BOTRestart:</code> <b>{res_time}</b>\n\n' \
+            f'<code>CPU       :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
+            f'<code>CPU Cores :</code> <b>{cpu_count(logical=True)}</b>\n' \
+            f'<code>P-Core(s) :</code> <b>{cpu_count(logical=False)}</b>\n' \
+            f'<code>V-Core(s) :</code> <b>{v_core}</b>\n' \
+            f'<code>Frequency :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
+            f'<code>RAM       :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
+            f'<code>RAM In Use:</code> <b>{get_readable_file_size(memory.used)}</b> [{mem_p}%]\n' \
+            f'<code>Total     :</code> <b>{get_readable_file_size(memory.total)}</b>\n' \
+            f'<code>Free      :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
+            f'<code>SWAP      :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
+            f'<code>SWAPInUse :</code> <b>{get_readable_file_size(swap.used)} [{swap.percent}%]</b>\n' \
+            f'<code>Allocated :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
+            f'<code>Free      :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
+            f'<code>DISK      :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
+            f'<code>DriveInUse:</code> <b>{used} [{disk}%]</b>\n' \
+            f'<code>Total     :</code> <b>{total}</b>\n' \
+            f'<code>Free      :</code> <b>{free}</b>\n\n' \
+            f'<code>Upload    :</code> <b>{sent}</b>\n' \
+            f'<code>Download  :</code> <b>{recv}</b>\n\n' \
+            f'<b><u>⋙ Bot Limits</u></b>\n' \
+            f'<code>Torrent   :</code> <b>{TOR} GB</b>\n' \
+            f'<code>G-Drive   :</code> <b>{GDL} GB</b>\n' \
+            f'<code>Yt-Dlp    :</code> <b>{YTD} <b>GB</b>\n' \
+            f'<code>Direct    :</code> <b>{DIR} GB</b>\n' \
+            f'<code>Clone     :</code> <b>{CLL} GB</b>\n' \
+            f'<code>Leech     :</code> <b>{TGL} GB</b>\n' \
+            f'<code>MEGA      :</code> <b>{MGA} GB</b>\n' \
+            f'<code>User_Tasks:</code> <b>{UMT}</b>\n' \
+            f'<code>Bot_Tasks :</code> <b>{BMT}</b>'
     reply_message = await sendMessage(message, stats)
-    await auto_delete_message(message, reply_message)
+    #await auto_delete_message(message, reply_message)
 
 
 async def start(_, message):
@@ -126,10 +131,10 @@ async def start(_, message):
     elif config_dict['DM_MODE']:
         start_string = 'Bot Started.\n' \
                        'Now I can send your stuff here.\n' \
-                       'Use me here: @Z_Mirror'
+                       'Use me here: @Server0x01'
     else:
         start_string = 'Sorry, you cant use me here!\n' \
-                       'Join @Z_Mirror to use me.\n' \
+                       'Join @Server0x01 to use me.\n' \
                        'Thank You'
     await sendMessage(message, start_string)
 
@@ -158,7 +163,7 @@ async def ping(_, message):
     await editMessage(reply, f'{ping_time} ms')
 
 async def log(_, message):
-    await sendFile(message, 'Z_Logs.txt')
+    await sendFile(message, 'logs.txt')
 
 help_string = f'''
 <b>NOTE: Click on any CMD to see more detalis.</b>

@@ -1,3 +1,3 @@
-# Use this branch as UPSTREAM_REPO for [zh_deploy](https://github.com/Dawn-India/Z-Mirror/tree/zh_deploy).
+# Server0x01
 
-**DO NOT UPLOAD ANYTHING HERE**
+*** Join https://t.me/Server0x01 ***

@@ -196,7 +196,7 @@ async def __getResult(search_results, key, message, method):
     if len(path) > 1:
         await editMessage(message, f"<b>Editing</b> {len(telegraph_content)} <b>Telegraph pages.</b>")
         await telegraph.edit_telegraph(path, telegraph_content)
-    return f"https://graph.org/{path[0]}"
+    return f"https://telegra.ph/{path[0]}"
 
 
 def __api_buttons(user_id, method):

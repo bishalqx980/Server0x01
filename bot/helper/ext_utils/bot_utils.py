@@ -107,7 +107,7 @@ async def get_telegraph_list(telegraph_content):
     if len(path) > 1:
         await telegraph.edit_telegraph(path, telegraph_content)
     buttons = ButtonMaker()
-    buttons.ubutton("🔎 VIEW", f"https://graph.org/{path[0]}", 'header')
+    buttons.ubutton("🔎 VIEW", f"https://telegra.ph/{path[0]}", 'header')
     buttons = extra_btns(buttons)
     return buttons.build_menu(1)
 
@@ -117,8 +117,8 @@ def get_progress_bar_string(pct):
         pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
     cFull = int(p // 10)
-    p_str = '▓' * cFull
-    p_str += '░' * (10 - cFull)
+    p_str = '■' * cFull # ▓ ░
+    p_str += '□' * (10 - cFull)
     return f"{p_str}"
 
 
@@ -213,15 +213,15 @@ def get_readable_message():
         buttons.ibutton(f"{PAGE_NO}/{PAGES}", "status ref")
         buttons.ibutton("⫸", "status nex")
         button = buttons.build_menu(3)
-    msg += "____________________________"
-    msg += f"\n<b>DISK</b>: <code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</code>"
-    msg += f" | <b>UPTM</b>: <code>{get_readable_time(time() - botStartTime)}</code>"
-    msg += f"\n<b>DL</b>: <code>{get_readable_file_size(dl_speed)}/s</code>"
-    msg += f" | <b>UL</b>: <code>{get_readable_file_size(up_speed)}/s</code>"
+        msg = f"\n<b>↠ @Server0x01</b>\n"
+    msg += f"<code>DISK         :</code> <b>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</b>\n"
+    msg += f"<code>Uptime       :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n"
+    msg += f"<code>Download     :</code> <b>{get_readable_file_size(dl_speed)}ps</b>\n"
+    msg += f"<code>Upload       :</code> <b>{get_readable_file_size(up_speed)}ps</b>\n"
     remaining_time = 86400 - (time() - botStartTime)
     res_time = '⚠️ ANYTIME ⚠️' if remaining_time <= 0 else get_readable_time(remaining_time)
     if remaining_time <= 3600:
-        msg += f"\n<b>Bot Restarts In:</b> <code>{res_time}</code>"
+        msg += f"<code>BotRestartsIn:</code> <b>{res_time}</b>"
     return msg, button
 
 
@@ -383,7 +383,7 @@ def checking_access(user_id, button=None):
         user_data[user_id].update(data)
         if button is None:
             button = ButtonMaker()
-        button.ubutton('Get New Token', short_url(f'https://telegram.me/{bot_name}?start={token}'))
+        button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
         return 'Your <b>Token</b> is expired. Get a new one.', button
     return None, button
 

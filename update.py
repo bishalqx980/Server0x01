@@ -6,12 +6,12 @@ from dotenv import load_dotenv
 from sys import executable
 from pymongo import MongoClient
 
-if ospath.exists('Z_Logs.txt'):
-    with open('Z_Logs.txt', 'r+') as f:
+if ospath.exists('logs.txt'):
+    with open('logs.txt', 'r+') as f:
         f.truncate(0)
 
 basicConfig(format='%(levelname)s | From %(name)s -> %(module)s line no: %(lineno)d | %(message)s',
-                    handlers=[FileHandler('Z_Logs.txt'), StreamHandler()], level=INFO)
+                    handlers=[FileHandler('logs.txt'), StreamHandler()], level=INFO)
 
 CONFIG_FILE_URL = environ.get('CONFIG_FILE_URL')
 try:
@@ -60,11 +60,11 @@ if DATABASE_URL:
 
 UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
 if len(UPSTREAM_REPO) == 0:
-    UPSTREAM_REPO = 'https://gitlab.com/Dawn-India/Z-Mirror'
+    UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
 
 UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
 if len(UPSTREAM_BRANCH) == 0:
-    UPSTREAM_BRANCH = 'zh_run'
+    UPSTREAM_BRANCH = 'main'
 
 if ospath.exists('.git'):
     srun(["rm", "-rf", ".git"])
@@ -82,7 +82,7 @@ if update.returncode == 0:
     log_info('Successfully updated with latest commit.')
     log_info(f'Repo in use: {UPSTREAM_REPO}')
     log_info(f'Branch in use: {UPSTREAM_BRANCH}')
-    log_info('Thanks For Using Z_Mirror')
+    log_info('Thanks For Using Server0x01')
 else:
     log_error('Something went wrong while updating.')
     log_info('Check if entered UPSTREAM_REPO is valid or not!')

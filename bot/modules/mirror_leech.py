@@ -12,7 +12,7 @@ from bot.helper.ext_utils.bot_utils import (arg_parser, get_content_type, is_gdr
                                             is_url, new_task, sync_to_async)
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import MIRROR_HELP_MESSAGE
-from bot.helper.z_utils import none_admin_utils, stop_duplicate_tasks
+from bot.helper.utils import none_admin_utils, stop_duplicate_tasks
 from bot.helper.listeners.tasks_listener import MirrorLeechListener
 from bot.helper.mirror_utils.download_utils.aria2_download import add_aria2c_download
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
