@@ -79,7 +79,7 @@ async def stats(_, message):
             f'<b><u>⋙ Bot Info</u></b>\n' \
             f'<code>SYS Uptime:</code> <b>{sysTime}</b>\n' \
             f'<code>BOT Uptime:</code> <b>{botTime}</b>\n' \
-            f'<code>BOTRestart:</code> <b>{res_time}</b>\n\n' \
+            f'<code>Restart IN:</code> <b>{res_time}</b>\n\n' \
             f'<code>CPU       :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
             f'<code>CPU Cores :</code> <b>{cpu_count(logical=True)}</b>\n' \
             f'<code>P-Core(s) :</code> <b>{cpu_count(logical=False)}</b>\n' \
@@ -94,11 +94,11 @@ async def stats(_, message):
             f'<code>Allocated :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
             f'<code>Free      :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
             f'<code>DISK      :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
-            f'<code>DriveInUse:</code> <b>{used} [{disk}%]</b>\n' \
+            f'<code>DISK_InUse:</code> <b>{used} [{disk}%]</b>\n' \
             f'<code>Total     :</code> <b>{total}</b>\n' \
             f'<code>Free      :</code> <b>{free}</b>\n\n' \
-            f'<code>Upload    :</code> <b>{sent}</b>\n' \
-            f'<code>Download  :</code> <b>{recv}</b>\n\n' \
+            f'<code>Uploaded  :</code> <b>{sent}</b>\n' \
+            f'<code>Downloaded:</code> <b>{recv}</b>\n\n' \
             f'<b><u>⋙ Bot Limits</u></b>\n' \
             f'<code>Torrent   :</code> <b>{TOR} GB</b>\n' \
             f'<code>G-Drive   :</code> <b>{GDL} GB</b>\n' \
@@ -110,7 +110,7 @@ async def stats(_, message):
             f'<code>User_Tasks:</code> <b>{UMT}</b>\n' \
             f'<code>Bot_Tasks :</code> <b>{BMT}</b>'
     reply_message = await sendMessage(message, stats)
-    #await auto_delete_message(message, reply_message)
+    await auto_delete_message(message, reply_message)
 
 
 async def start(_, message):
@@ -129,13 +129,14 @@ async def start(_, message):
         msg += f'Validity: {get_readable_time(int(config_dict["TOKEN_TIMEOUT"]))}'
         return await sendMessage(message, msg)
     elif config_dict['DM_MODE']:
-        start_string = 'Bot Started.\n' \
+        start_string = 'Im ALive!! :)\n' \
                        'Now I can send your stuff here.\n' \
-                       'Use me here: @Server0x01'
+                       'Join @Server0x01 Groups to use me.\n'\
+                       'Thank You!'
     else:
         start_string = 'Sorry, you cant use me here!\n' \
-                       'Join @Server0x01 to use me.\n' \
-                       'Thank You'
+                       'Join @Server0x01 Groups to use me.\n' \
+                       'Thank You!'
     await sendMessage(message, start_string)
 
 

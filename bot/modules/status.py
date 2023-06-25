@@ -26,14 +26,14 @@ async def mirror_status(_, message):
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)
-        msg = '<b><u>@Server0x01 - BOT IDLE</u></b>'
-        msg += '\n\n<b>⋙ No Active Tasks! ⋘</b>'
-        msg += f"\n<code>CPU    :</code> <b>{cpu_percent()}%</b>"\
-               f"\n<code>FREE   :</code> <b>{free}</b>" \
-               f"\n<code>RAM    :</code> <b>{virtual_memory().percent}%</b>" \
-               f"\n<code>UPTIME :</code> <b>{currentTime}</b>"
+        msg = '<b><u>@Server0x01 - BOT IDLE</u></b>\n\n'
+        msg += '<b>⋙ No Active Tasks! ⋘</b>\n\n'
+        msg += f"<code>CPU    :</code> <b>{cpu_percent()}%</b>\n"\
+               f"<code>FREE   :</code> <b>{free}</b>\n" \
+               f"<code>RAM    :</code> <b>{virtual_memory().percent}%</b>\n" \
+               f"<code>UPTIME :</code> <b>{currentTime}</b>"
         reply_message = await sendMessage(message, msg)
-        #await auto_delete_message(message, reply_message)
+        await auto_delete_message(message, reply_message)
     else:
         await sendStatusMessage(message)
         await deleteMessage(message)

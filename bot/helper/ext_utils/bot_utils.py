@@ -117,8 +117,8 @@ def get_progress_bar_string(pct):
         pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
     cFull = int(p // 10)
-    p_str = '■' * cFull # ▓ ░
-    p_str += '□' * (10 - cFull)
+    p_str = '●' * cFull # ▓ ░
+    p_str += '◌' * (10 - cFull)
     return f"{p_str}"
 
 
@@ -169,20 +169,20 @@ def get_readable_message():
                     pass
 
         elif download.status() == MirrorStatus.STATUS_SEEDING:
-            msg += f"\n• <code>Size     </code>» {download.size()}"
-            msg += f"\n• <code>Speed    </code>» {download.upload_speed()}"
-            msg += f"\n• <code>Uploaded </code>» {download.uploaded_bytes()}"
-            msg += f"\n• <code>Ratio    </code>» {download.ratio()}"
-            msg += f"\n• <code>Time     </code>» {download.seeding_time()}"
+            msg += f"\n• <code>Size     :</code> {download.size()}"
+            msg += f"\n• <code>Speed    :</code> {download.upload_speed()}"
+            msg += f"\n• <code>Uploaded :</code> {download.uploaded_bytes()}"
+            msg += f"\n• <code>Ratio    :</code> {download.ratio()}"
+            msg += f"\n• <code>Time     :</code> {download.seeding_time()}"
         else:
-            msg += f"\n• <code>Size     </code>» {download.size()}"
+            msg += f"\n• <code>Size     :</code> {download.size()}"
 
         if config_dict['DELETE_LINKS']:
-            msg += f"\n• <code>Task     </code>» {download.extra_details['mode']}"
+            msg += f"\n• <code>Task     :</code> {download.extra_details['mode']}"
         else:
-            msg += f"\n• <code>Task     </code>» <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
+            msg += f"\n• <code>Task     :</code> <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
 
-        msg += f"\n• <code>User     </code>» {tag}"
+        msg += f"\n• <code>User     :</code> {tag}"
         msg += f"\n⚠️ /{BotCommands.CancelMirror}_{download.gid()}\n\n"
 
     if len(msg) == 0:
@@ -384,7 +384,7 @@ def checking_access(user_id, button=None):
         if button is None:
             button = ButtonMaker()
         button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
-        return 'Your <b>Token</b> is expired. Get a new one. Thanks :)\n\n/token - to know how to generate a new token ☑ ↩', button
+        return f'Your <b><u>Token</u></b> is expired. Get a new one. Thanks :)\n\n/token - to know how to generate a new token ☑\nTokens are valid for {get_readable_time(int(config_dict["TOKEN_TIMEOUT"]))}', button
     return None, button
 
 
