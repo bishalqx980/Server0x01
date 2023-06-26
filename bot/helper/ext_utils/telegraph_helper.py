@@ -84,7 +84,7 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title='Z Torrent Search',
+                title='Server0x01 Torrent Search',
                 content=content
             )
         return
