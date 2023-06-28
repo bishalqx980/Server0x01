@@ -436,7 +436,7 @@ class MirrorLeechListener:
                         await sendMessage(self.logMessage, lmsg + msg)
                 elif self.dmMessage and not config_dict['DUMP_CHAT_ID']:
                     await sendMessage(self.dmMessage, lmsg + msg)
-                    await sendMessage(self.message, gmsg + msg + msg_)
+                    await sendMessage(self.message, gmsg + msg + msg_, buttons.build_menu(2))
                     if self.logMessage:
                         await sendMessage(self.logMessage, lmsg + msg)
                 else:
