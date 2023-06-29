@@ -401,15 +401,15 @@ class MirrorLeechListener:
         msg += f"<code>Upload  :</code> <b>{self.extra_details['mode']}</b>\n"
         _msg = '' if rclonePath == '' else f'\n\n<b>Path</b>: <code>{rclonePath}</code>'
         msg_ = '\n\n<b><i>Links has been sent in your Private Message!</i></b>'
-        buttons = ButtonMaker()
-        buttons.ubutton('Check PM', f"https://t.me/{bot_name}", 'header')
+        pmbuttons = ButtonMaker()
+        pmbuttons.ubutton('Check PM', f"https://t.me/{bot_name}", 'header')
         if self.isLeech:
             msg += f'\n<b>Total Files</b>: <i>{folders}</i>\n'
             if mime_type != 0:
                 msg += f'<b>Corrupted Files</b>: <i>{mime_type}</i>\n'
             msg_ = '\n<b><i>Files has been sent in your Private Message!</i></b>'
-            buttons = ButtonMaker()
-            buttons.ubutton('Check PM', f"https://t.me/{bot_name}", 'header')
+            pmbuttons = ButtonMaker()
+            pmbuttons.ubutton('Check PM', f"https://t.me/{bot_name}", 'header')
             if not self.dmMessage:
                 if not files:
                     await sendMessage(self.message, lmsg + msg)
@@ -436,7 +436,7 @@ class MirrorLeechListener:
                         await sendMessage(self.logMessage, lmsg + msg)
                 elif self.dmMessage and not config_dict['DUMP_CHAT_ID']:
                     await sendMessage(self.dmMessage, lmsg + msg)
-                    await sendMessage(self.message, gmsg + msg + msg_, buttons.build_menu(2))
+                    await sendMessage(self.message, gmsg + msg + msg_, pmbuttons.build_menu(2))
                     if self.logMessage:
                         await sendMessage(self.logMessage, lmsg + msg)
                 else:
@@ -452,7 +452,7 @@ class MirrorLeechListener:
                     if fmsg != '\n':
                         if self.logMessage:
                             await sendMessage(self.logMessage, lmsg + msg + fmsg)
-                        await sendMessage(self.message, gmsg + msg + msg_, buttons.build_menu(2))
+                        await sendMessage(self.message, gmsg + msg + msg_, pmbuttons.build_menu(2))
                         await sendMessage(self.dmMessage, gmsg + msg + fmsg)
             if self.seed:
                 if self.newDir:
@@ -497,7 +497,7 @@ class MirrorLeechListener:
                 buttons = extra_btns(buttons)
                 if self.dmMessage:
                     await sendMessage(self.dmMessage, lmsg + msg + _msg, buttons.build_menu(2))
-                    await sendMessage(self.message, gmsg + msg + msg_, buttons.build_menu(2))
+                    await sendMessage(self.message, gmsg + msg + msg_, pmbuttons.build_menu(2))
                 else:
                     await sendMessage(self.message, lmsg + msg + _msg, buttons.build_menu(2))
                 if self.logMessage:
@@ -506,10 +506,10 @@ class MirrorLeechListener:
                     await sendMessage(self.logMessage, lmsg + msg + _msg, buttons.build_menu(2))
             else:
                 if self.dmMessage:
-                    await sendMessage(self.message, gmsg + msg + msg_, buttons.build_menu(2))
+                    await sendMessage(self.message, gmsg + msg + msg_, pmbuttons.build_menu(2))
                     await sendMessage(self.dmMessage, lmsg + msg + _msg)
                 else:
-                    await sendMessage(self.message, lmsg + msg + _msg + msg_, buttons.build_menu(2))
+                    await sendMessage(self.message, lmsg + msg + _msg + msg_, pmbuttons.build_menu(2))
                 if self.logMessage:
                     await sendMessage(self.logMessage, lmsg + msg + _msg)
             if self.seed and not self.isClone:
