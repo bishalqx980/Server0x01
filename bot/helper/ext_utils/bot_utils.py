@@ -183,6 +183,7 @@ def get_readable_message():
             msg += f"\n• <code>Task     :</code> <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
 
         msg += f"\n• <code>User     :</code> {tag}"
+        msg += f"\n• Calcel task? click 👇\n"
         msg += f"\n⚠️ /{BotCommands.CancelMirror}_{download.gid()}\n\n"
 
     if len(msg) == 0:
@@ -383,7 +384,7 @@ def checking_access(user_id, button=None):
         user_data[user_id].update(data)
         if button is None:
             button = ButtonMaker()
-        button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
+        button.ubutton('🔑 Generate Token', short_url(f'https://t.me/{bot_name}?start={token}'))
         return f'<b>Your <u>Token</u> is expired. Get a new one. Thanks :)\n\n/token - to know how to generate a new token ☑\n\n<u>Token</u> will be valid for next {get_readable_time(int(config_dict["TOKEN_TIMEOUT"]))}</b>', button
     return None, button
 
