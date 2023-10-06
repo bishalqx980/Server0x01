@@ -57,32 +57,32 @@ async def stats(_, message, edit_mode=False):
     mem_p       = memory.percent
     swap        = swap_memory()
 
-    bot_stats = f'<b><i><u>@Server0x01 Bot Statistics</u></i></b>\n\n'\
-                f'<code>CPU  : {get_progress_bar_string(cpuUsage)}</code> {cpuUsage}%\n' \
-                f'<code>RAM  : {get_progress_bar_string(mem_p)}</code> {mem_p}%\n' \
-                f'<code>SWAP : {get_progress_bar_string(swap.percent)}</code> {swap.percent}%\n' \
-                f'<code>DISK : {get_progress_bar_string(disk)}</code> {disk}%\n\n' \
-                f'<code>Bot Uptime      : </code> {botTime}\n' \
-                f'<code>BOT Restart     : </code> {res_time}\n\n' \
-                f'<code>Uploaded        : </code> {sent}\n' \
-                f'<code>Downloaded      : </code> {recv}\n' \
-                f'<code>Total Bandwidth : </code> {tb}'
+    bot_stats = f'<b>@Server0x01 ​🇧​​🇴​​🇹​ ​🇸​​🇹​​🇦​​🇹​​🇮​​🇸​​🇹​​🇮​​🇨​​🇸​</b>\n\n'\
+                f'<code>CPU             :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
+                f'<code>RAM             :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
+                f'<code>SWAP            :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
+                f'<code>DISK            :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n\n' \
+                f'<code>Bot Uptime      :</code> <b>{botTime}</b>\n' \
+                f'<code>BOT Restart     :</code> <b>{res_time}</b>\n\n' \
+                f'<code>Uploaded        :</code> <b>{sent}</b>\n' \
+                f'<code>Downloaded      :</code> <b>{recv}</b>\n' \
+                f'<code>Total Bandwidth :</code> <b>{tb}</b>'
 
-    sys_stats = f'<b><i><u>@Server0x01 System Statistics</u></i></b>\n\n'\
-                f'<b>System Uptime:</b> <code>{sysTime}</code>\n' \
-                f'<b>CPU:</b> {get_progress_bar_string(cpuUsage)}<code> {cpuUsage}%</code>\n' \
-                f'<b>CPU Total Core(s):</b> <code>{cpu_count(logical=True)}</code>\n' \
-                f'<b>P-Core(s):</b> <code>{cpu_count(logical=False)}</code> | ' \
-                f'<b>V-Core(s):</b> <code>{v_core}</code>\n' \
-                f'<b>Frequency:</b> <code>{cpu_freq(percpu=False).current / 1000:.2f} GHz</code>\n\n' \
-                f'<b>RAM:</b> {get_progress_bar_string(mem_p)}<code> {mem_p}%</code>\n' \
-                f'<b>Total:</b> <code>{get_readable_file_size(memory.total)}</code> | ' \
-                f'<b>Free:</b> <code>{get_readable_file_size(memory.available)}</code>\n\n' \
-                f'<b>SWAP:</b> {get_progress_bar_string(swap.percent)}<code> {swap.percent}%</code>\n' \
-                f'<b>Total</b> <code>{get_readable_file_size(swap.total)}</code> | ' \
-                f'<b>Free:</b> <code>{get_readable_file_size(swap.free)}</code>\n\n' \
-                f'<b>DISK:</b> {get_progress_bar_string(disk)}<code> {disk}%</code>\n' \
-                f'<b>Total:</b> <code>{total}</code> | <b>Free:</b> <code>{free}</code>'
+    sys_stats = f'<b>@Server0x01 ​🇸​​🇾​​🇸​​🇹​​🇪​​🇲​ ​🇸​​🇹​​🇦​​🇹​​🇮​​🇸​​🇹​​🇮​​🇨​​🇸</b>\n\n'\
+                f'<code>System Uptime    :</code> <b>{sysTime}</b>\n' \
+                f'<code>CPU              :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
+                f'<code>CPU Total Core(s):</code> <b>{cpu_count(logical=True)}</b>\n' \
+                f'<code>P-Core(s)        :</code> <b>{cpu_count(logical=False)}</b> | ' \
+                f'<code>V-Core(s)        :</code> <b>{v_core}</b>\n' \
+                f'<code>Frequency        :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
+                f'<code>RAM              :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
+                f'<code>Total            :</code> <b>{get_readable_file_size(memory.total)}</b> | ' \
+                f'<code>Free             :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
+                f'<code>SWAP             :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
+                f'<code>Total            :</code> <b>{get_readable_file_size(swap.total)}</b> | ' \
+                f'<code>Free             :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
+                f'<code>DISK             :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
+                f'<code>Total            :</code> <b>{total}</b> | <code>Free:</code> <b>{free}</b>'
 
     buttons.ibutton("Sys Stats",  "show_sys_stats")
     buttons.ibutton("Repo Stats", "show_repo_stats")
