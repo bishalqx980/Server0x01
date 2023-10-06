@@ -83,7 +83,7 @@ async def stats(_, message, edit_mode=False):
                 f'<code>Free             :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
                 f'<code>DISK             :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
                 f'<code>Total            :</code> <b>{total}</b>\n' \
-                f"<code>Free             :</code> <b>{free}</b>'
+                f'<code>Free             :</code> <b>{free}</b>'
 
     buttons.ibutton("Sys Stats",  "show_sys_stats")
     buttons.ibutton("Repo Stats", "show_repo_stats")
