@@ -57,7 +57,7 @@ async def stats(_, message, edit_mode=False):
     mem_p       = memory.percent
     swap        = swap_memory()
 
-    bot_stats = f'<b>🔰 <u>SYSTEM STATISTICS</u></b>\n\n'\
+    bot_stats = f'<b>🔰 <u>BOT STATISTICS</u></b>\n\n'\
                 f'<code>CPU  :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
                 f'<code>RAM  :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
                 f'<code>SWAP :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
@@ -146,7 +146,7 @@ async def send_repo_stats(_, query):
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
-                 f'<b>@Server0x01</b>\n\n{update_info}'
+                 f'<b>{update_info}</b>'
 
     buttons.ibutton("Bot Stats",  "show_bot_stats")
     buttons.ibutton("Sys Stats",  "show_sys_stats")
@@ -169,7 +169,7 @@ async def send_bot_limits(_, query):
     UMT = 'Unlimited' if config_dict['USER_MAX_TASKS']  == '' else config_dict['USER_MAX_TASKS']
     BMT = 'Unlimited' if config_dict['QUEUE_ALL']       == '' else config_dict['QUEUE_ALL']
 
-    bot_limit = f'<b>@Serverv0x01 <u>Bot Limitations</u></b>\n' \
+    bot_limit = f'<b>🔰 <u>Bot Limitations</u></b>\n' \
                 f'<code>Torrent :</code> <b>{TOR} GB</b>\n' \
                 f'<code>G-Drive :</code> <b>{GDL} GB</b>\n' \
                 f'<code>Yt-Dlp  :</code> <b>{YTD} GB</b>\n' \
