@@ -146,7 +146,7 @@ async def send_repo_stats(_, query):
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
-                 f'<b>{update_info}\n\n@Server0x01</b>'
+                 f'<b>@Server0x01</b>\n\n{update_info}'
 
     buttons.ibutton("Bot Stats",  "show_bot_stats")
     buttons.ibutton("Sys Stats",  "show_sys_stats")
