@@ -396,9 +396,9 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManager().rm_complete_task(self.message.link)
         LOGGER.info(f'Done Uploading {name}')
-        lmsg = f'<b><i>{escape(name)}</i></b>'
-        lmsg += f'\n<b>cc</b>: <i>{self.tag}</i>'
-        gmsg = f'Hey <b>{self.tag}</b>!\nYour job is done.'
+        lmsg = f'<b>{escape(name)}</b>'
+        lmsg += f'\n<b>cc</b>: {self.tag}'
+        gmsg = f'Yo, <b>{self.tag}</b>!\nYour job is done.'
         msg = f'\n\n<code>Size            </code>: {get_readable_file_size(size)}'
         msg += f"\n<code>Elapsed         </code>: {get_readable_time(time() - self.extra_details['startTime'])}"
         msg += f"\n<code>Upload          </code>: {self.extra_details['mode']}"
@@ -488,9 +488,9 @@ class MirrorLeechListener:
                         share_url = f'{INDEX_URL}/{url_path}'
                         if mime_type == "Folder":
                             share_url += '/'
-                            buttons.ubutton("📁 Direct Link", share_url)
+                            buttons.ubutton("📂 Download", share_url)
                         else:
-                            buttons.ubutton("🔗 Direct Link", share_url)
+                            buttons.ubutton("📂 Download", share_url)
                             if mime_type.startswith(('image', 'video', 'audio')):
                                 share_urls = f'{INDEX_URL}/{url_path}?a=view'
                                 buttons.ubutton("🌐 View Link", share_urls)
