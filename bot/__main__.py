@@ -57,7 +57,7 @@ async def stats(_, message, edit_mode=False):
     mem_p       = memory.percent
     swap        = swap_memory()
 
-    bot_stats = f'<b>@Server0x01 ​🇧​​🇴​​🇹​ ​🇸​​🇹​​🇦​​🇹​​🇮​​🇸​​🇹​​🇮​​🇨​​🇸​</b>\n\n'\
+    bot_stats = f'<b>@Server0x01 <u>SYSTEM STATISTICS</u></b>\n\n'\
                 f'<code>CPU             :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
                 f'<code>RAM             :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
                 f'<code>SWAP            :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
@@ -68,21 +68,22 @@ async def stats(_, message, edit_mode=False):
                 f'<code>Downloaded      :</code> <b>{recv}</b>\n' \
                 f'<code>Total Bandwidth :</code> <b>{tb}</b>'
 
-    sys_stats = f'<b>@Server0x01 ​🇸​​🇾​​🇸​​🇹​​🇪​​🇲​ ​🇸​​🇹​​🇦​​🇹​​🇮​​🇸​​🇹​​🇮​​🇨​​🇸</b>\n\n'\
+    sys_stats = f'<b>@Server0x01 <u>SYSTEM STATISTICS</u></b>\n\n'\
                 f'<code>System Uptime    :</code> <b>{sysTime}</b>\n' \
                 f'<code>CPU              :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
                 f'<code>CPU Total Core(s):</code> <b>{cpu_count(logical=True)}</b>\n' \
-                f'<code>P-Core(s)        :</code> <b>{cpu_count(logical=False)}</b> | ' \
+                f'<code>P-Core(s)        :</code> <b>{cpu_count(logical=False)}</b>\n' \
                 f'<code>V-Core(s)        :</code> <b>{v_core}</b>\n' \
                 f'<code>Frequency        :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
                 f'<code>RAM              :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
-                f'<code>Total            :</code> <b>{get_readable_file_size(memory.total)}</b> | ' \
+                f'<code>Total            :</code> <b>{get_readable_file_size(memory.total)}</b>\n' \
                 f'<code>Free             :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
                 f'<code>SWAP             :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
-                f'<code>Total            :</code> <b>{get_readable_file_size(swap.total)}</b> | ' \
+                f'<code>Total            :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
                 f'<code>Free             :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
                 f'<code>DISK             :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
-                f'<code>Total            :</code> <b>{total}</b> | <code>Free:</code> <b>{free}</b>'
+                f'<code>Total            :</code> <b>{total}</b>\n' \
+                f"<code>Free             :</code> <b>{free}</b>'
 
     buttons.ibutton("Sys Stats",  "show_sys_stats")
     buttons.ibutton("Repo Stats", "show_repo_stats")
@@ -130,8 +131,8 @@ async def send_repo_stats(_, query):
     update_info = ''
     s_id        = ''
     async with xclient() as client:
-        c_url = 'https://gitlab.com/api/v4/projects/Dawn-India%2fZ-Mirror/repository/branches'
-        v_url = 'https://gitlab.com/api/v4/projects/Dawn-India%2FZ-Mirror/repository/tags'
+        c_url = ''
+        v_url = ''
         res = await client.get(c_url)
         pns = await client.get(v_url)
         if res.status_code == 200 and pns.status_code == 200:
@@ -160,13 +161,13 @@ async def send_repo_stats(_, query):
                 update_info =  f'⚠️ New Version Update Available ⚠️\n'
                 update_info += f'Update ASAP and experience new features and bug-fixes.'
         
-    repo_stats = f'<b><i><u>@Serverv0x01 Repository Info</u></i></b> \n\n' \
-                 f'<b><i>Official Repository</i></b>        \n'   \
+    repo_stats = f'<b>@Serverv0x01 <u>Repository Info</u></b> \n\n' \
+                 f'<b>Official Repository</b>        \n'   \
                  f'<code>- Updated   : </code> {commit_date}\n'   \
                  f'<code>- Version   : </code> {vtag}       \n'   \
                  f'<code>- Changelog : </code> {c_log}      \n'   \
                  f'<code>- Desc      : </code> {d_log}      \n'   \
-                 f'<b><i>Bot Repository</i></b>             \n'   \
+                 f'<b>Bot Repository</b>             \n'   \
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
@@ -193,16 +194,16 @@ async def send_bot_limits(_, query):
     UMT = 'Unlimited' if config_dict['USER_MAX_TASKS']  == '' else config_dict['USER_MAX_TASKS']
     BMT = 'Unlimited' if config_dict['QUEUE_ALL']       == '' else config_dict['QUEUE_ALL']
 
-    bot_limit = f'<b><i><u>@Serverv0x01 Bot Limitations</u></i></b>\n' \
-                f'<code>Torrent   :</code> <b>{TOR} GB</b>\n' \
-                f'<code>G-Drive   :</code> <b>{GDL} GB</b>\n' \
-                f'<code>Yt-Dlp    :</code> <b>{YTD} GB</b>\n' \
-                f'<code>Direct    :</code> <b>{DIR} GB</b>\n' \
-                f'<code>Clone     :</code> <b>{CLL} GB</b>\n' \
-                f'<code>Leech     :</code> <b>{TGL} GB</b>\n' \
-                f'<code>MEGA      :</code> <b>{MGA} GB</b>\n\n' \
-                f'<code>User Tasks:</code> <b>{UMT}</b>\n' \
-                f'<code>Bot Tasks :</code> <b>{BMT}</b>'
+    bot_limit = f'<b>@Serverv0x01 <u>Bot Limitations</u></b>\n' \
+                f'<code>Torrent :</code> <b>{TOR} GB</b>\n' \
+                f'<code>G-Drive :</code> <b>{GDL} GB</b>\n' \
+                f'<code>Yt-Dlp  :</code> <b>{YTD} GB</b>\n' \
+                f'<code>Direct  :</code> <b>{DIR} GB</b>\n' \
+                f'<code>Clone   :</code> <b>{CLL} GB</b>\n' \
+                f'<code>Leech   :</code> <b>{TGL} GB</b>\n' \
+                f'<code>MEGA    :</code> <b>{MGA} GB</b>\n\n' \
+                f'<code>User-T  :</code> <b>{UMT}</b>\n' \
+                f'<code>Bot-T   :</code> <b>{BMT}</b>'
 
     buttons.ibutton("Bot Stats",  "show_bot_stats")
     buttons.ibutton("Sys Stats",  "show_sys_stats")
