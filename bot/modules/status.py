@@ -90,11 +90,11 @@ def bot_sys_stats():
             extr += 1
         elif status == MirrorStatus.STATUS_SEEDING:
             seed += 1
-    bmsg = f'_____@Server0x01 BOT INFO____\n\n'
-    bmsg += f'C: {cpup}% | R: {ramp}% | D: {disk}%\n\n'
-    bmsg += f'T : {totl} | F : {free} | Q : {inqu}\n'
-    bmsg += f'DL: {dwld} | UL: {upld} | SD: {seed}\n'
-    bmsg += f'ZP: {arch} | UZ: {extr} | SP: {splt}\n\n'
+    bmsg = f'⚡ @Server0x01 BOT INFO ⚡\n\n'
+    bmsg += f'CPU: {cpup}% | RAM: {ramp}% | DISK: {disk}%\n\n'
+    bmsg += f'Total: {totl} | Free: {free} | Queued: {inqu}\n'
+    bmsg += f'Download: {dwld} | Upload: {upld} | Seeding: {seed}\n'
+    bmsg += f'Zip: {arch} | Unzip: {extr} | Split: {splt}\n\n'
     bmsg += f'Bandwidth Used: {traf}'
     return bmsg
 
