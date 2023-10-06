@@ -131,27 +131,6 @@ async def send_repo_stats(_, query):
     update_info = ''
     s_id        = ''
     async with xclient() as client:
-        """
-        c_url = 'https://github.com/bishalqx980/Server0x01'
-        v_url = 'https://github.com/bishalqx980/Server0x01'
-        res = await client.get(c_url)
-        pns = await client.get(v_url)
-        if res.status_code == 200 and pns.status_code == 200:
-            commits = res.json()
-            tags = pns.json()
-            if commits:
-                commits = next((commit for commit in commits if commit["name"] == "upstream"), None)
-                commit_date   = commits["commit"]["committed_date"]
-                commit_date   = dt.strptime(commit_date, '%Y-%m-%dT%H:%M:%S.%f%z')
-                commit_date   = commit_date.strftime('%d/%m/%Y at %I:%M %p')
-                logs          = commits["commit"]["message"].split('\n\n')
-                c_log         = logs[0]
-                d_log         = logs[1]
-                s_id          = commits["commit"]["short_id"]
-            if tags:
-                tags = next((tag for tag in tags if tag["commit"]["short_id"] == f"{s_id}"), None)
-                vtag = tags["name"]
-        """
         if await aiopath.exists('.git'):
             last_commit = (await cmd_exec("git log -1   --date=short --pretty=format:'%cr'", True))[0]
             version     = (await cmd_exec("git describe --abbrev=0   --tags",                True))[0]
@@ -164,14 +143,6 @@ async def send_repo_stats(_, query):
                 update_info += f'Update ASAP and experience new features and bug-fixes.'
         
     repo_stats = f'<b>🔰 <u>Repository Info</u></b> \n\n' \
-    """
-                 f'<b>Official Repository</b>        \n'   \
-                 f'<code>- Updated   : </code> {commit_date}\n'   \
-                 f'<code>- Version   : </code> {vtag}       \n'   \
-                 f'<code>- Changelog : </code> {c_log}      \n'   \
-                 f'<code>- Desc      : </code> {d_log}      \n'   \
-                 f'<b>Bot Repository</b>             \n'   \
-    """
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
