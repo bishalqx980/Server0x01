@@ -1,17 +1,16 @@
+#!/usr/bin/env python3
 from asyncio import sleep
 from datetime import datetime, timedelta, timezone
 from time import time
 from re import match as re_match
 
-from pyrogram.errors import (FloodWait, PeerIdInvalid, RPCError,
-                             UserNotParticipant)
+from pyrogram.errors import (FloodWait, PeerIdInvalid, RPCError, UserNotParticipant)
 from pyrogram.types import ChatPermissions
 
 from bot import (LOGGER, Interval, bot, bot_name, cached_dict, categories_dict,
                  config_dict, download_dict_lock, status_reply_dict,
                  status_reply_dict_lock, user)
-from bot.helper.ext_utils.bot_utils import (get_readable_message, setInterval,
-                                            get_readable_file_size, sync_to_async)
+from bot.helper.ext_utils.bot_utils import get_readable_message, setInterval, sync_to_async
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.exceptions import TgLinkException
 
@@ -108,7 +107,7 @@ async def get_tg_link_content(link):
     message = None
     if link.startswith('https://t.me/'):
         private = False
-        msg = re_match(r"https:\/\/t\.me\/(?:c\/)?([^\/]+)\/([0-9]+)", link)
+        msg = re_match(r"https:\/\/t\.me\/(?:c\/)?([^\/]+)(?:\/[^\/]+)?\/([0-9]+)", link)
     else:
         private = True
         msg = re_match(
@@ -135,7 +134,7 @@ async def get_tg_link_content(link):
         try:
             user_message = await user.get_messages(chat_id=chat, message_ids=msg_id)
         except Exception as e:
-            raise TgLinkException(f"You don't have access to this chat!. ERROR: {e}") from e
+            raise TgLinkException(f"I don't have access to that chat!\nAdd me there first. ERROR: {e}") from e
         if not user_message.empty:
             return user_message, 'user'
         else:
@@ -197,7 +196,10 @@ async def isBot_canDm(message, dmMode, isLeech=False, button=None):
     if dmMode == 'leech' and not isLeech:
         return None, button
     user = await user_info(message._client, message.from_user.id)
-    if user.status == user.status.LONG_AGO:
+    try:
+        dm_check = await message._client.send_message(message.from_user.id, "Your task added to download.")
+        await dm_check.delete()
+    except Exception as e:
         if button is None:
             button = ButtonMaker()
         _msg = "You need to <b>Start</b> me in <b>DM</b>."
@@ -350,7 +352,8 @@ async def open_category_btns(message):
     buttons = ButtonMaker()
     for _name in categories_dict.keys():
         buttons.ibutton(f'{_name}', f'scat {user_id} {msg_id} {_name}')
-    prompt = await sendMessage(message, '<b>Select the category where you want to upload</b>', buttons.build_menu(2))
+    msg = f'<b>Select where you want to upload</b>\n\nUser: {message.from_user.mention}'
+    prompt = await sendMessage(message, msg, buttons.build_menu(2))
     cached_dict[msg_id] = [None, None]
     start_time = time()
     while time() - start_time <= 30:

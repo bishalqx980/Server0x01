@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import create_subprocess_exec
 from aiofiles.os import path as aiopath
 from aiofiles import open as aiopen
@@ -22,8 +23,7 @@ async def rclone_serve_booter():
         contents = await f.read()
         config.read_string(contents)
     if not config.has_section('combine'):
-        upstreams = ' '.join(
-            f'{remote}={remote}:' for remote in config.sections())
+        upstreams = ' '.join(f'{remote}={remote}:' for remote in config.sections())
         config.add_section('combine')
         config.set('combine', 'type', 'combine')
         config.set('combine', 'upstreams', upstreams)

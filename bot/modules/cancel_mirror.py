@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import sleep
 
 from pyrogram.filters import command, regex
@@ -9,7 +10,7 @@ from bot.helper.ext_utils.bot_utils import (MirrorStatus, getAllDownload,
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.message_utils import (anno_checker,
+from bot.helper.telegram_helper.message_utils import (anno_checker, auto_delete_message,
                                                       editMessage, sendMessage)
 
 
@@ -27,22 +28,26 @@ async def cancel_mirror(client, message):
         gid = cmd_data[0]
         dl = await getDownloadByGid(gid)
         if not dl:
-            await sendMessage(message, f"GID: <code>{gid}</code> Not Found.")
+            tmsg = await sendMessage(message, f"GID: <code>{gid}</code> Not Found.")
+            await auto_delete_message(message, tmsg)
             return
     elif reply_to_id := message.reply_to_message_id:
         async with download_dict_lock:
             dl = download_dict.get(reply_to_id, None)
         if not dl:
-            await sendMessage(message, "This is not an active task!")
+            tmsg = await sendMessage(message, "This is not an active task!")
+            await auto_delete_message(message, tmsg)
             return
     elif len(msg) == 1:
         msg = f"Reply to an active Command message which was used to start the download" \
             f" or send <code>/{BotCommands.CancelMirror}_GID@{bot_name}</code> to cancel it!"
-        await sendMessage(message, msg)
+        tmsg = await sendMessage(message, msg)
+        await auto_delete_message(message, tmsg)
         return
 
     if not await CustomFilters.sudo(client, message) and dl.message.from_user.id != user_id:
-        await sendMessage(message, "This task is not for you!")
+        tmsg = await sendMessage(message, "This task is not for you!")
+        await auto_delete_message(message, tmsg)
         return
     obj = dl.download()
     await obj.cancel_download()
@@ -70,14 +75,16 @@ async def cancel_all(status, info, listOfTasks):
         new_msg = f"<b>Success</b>: {success}\n"
         new_msg += f"<b>Failed</b>: {failed}\n"
         new_msg += f"<b>#cancel_all</b> : {tag}"
-        await editMessage(msg, _msg+new_msg)
+        emsg = await editMessage(msg, _msg+new_msg)
+        await auto_delete_message(msg, emsg)
 
 
 async def cancell_all_buttons(client, message):
     async with download_dict_lock:
         count = len(download_dict)
     if count == 0:
-        await sendMessage(message, "No active tasks!")
+        tmsg = await sendMessage(message, "No active tasks!")
+        await auto_delete_message(message, tmsg)
         return
     if not message.from_user:
         tag = 'Anonymous'
@@ -96,9 +103,13 @@ async def cancell_all_buttons(client, message):
             try:
                 user_id = int(message.command[1])
             except:
-                return await sendMessage(message, "Invalid Argument! Send Userid or reply")
+                tmsg = await sendMessage(message, "Invalid Argument! Send Userid or reply")
+                await auto_delete_message(message, tmsg)
+                return
     if user_id and not await getAllDownload('all', user_id):
-        return await sendMessage(message, f"{user_id} Don't have any active task!")
+        tmsg = await sendMessage(message, f"{user_id} Don't have any active task!")
+        await auto_delete_message(message, tmsg)
+        return
     msg_id = message.id
     buttons = ButtonMaker()
     buttons.ibutton("Downloading",  f"cnall {MirrorStatus.STATUS_DOWNLOADING} {msg_id}")
@@ -123,17 +134,17 @@ async def cancell_all_buttons(client, message):
 async def cancel_all_update(_, query):
     data = query.data.split()
     user_id = query.from_user.id
-    data = query.data.split()
     message = query.message
     msg_id = int(data[2])
-    if not (info := cancel_listener.get(msg_id)):
+    if msg_id not in cancel_listener:
         return await editMessage(message, "This is an old message")
+    info = cancel_listener[msg_id]
     if info[0] and info[2] != user_id:
         return await query.answer(text="You are not allowed to do this!", show_alert=True)
-    elif data[1] == 'close':
+    if data[1] == 'close':
         await query.answer()
         del cancel_listener[msg_id]
-        return await editMessage(message, "Cancellation Listener Closed.", message)
+        return await editMessage(message, "Cancellation Listener Closed.")
     if not (listOfTasks := await getAllDownload(data[1], info[0])):
         return await query.answer(text=f"You don't have any active task in {data[1]}", show_alert=True)
     await query.answer(f"{len(listOfTasks)} will be cancelled in {data[1]}", show_alert=True)
@@ -141,6 +152,7 @@ async def cancel_all_update(_, query):
     await cancel_all(data[1], info, listOfTasks)
 
 
+@new_task
 async def _auto_cancel(msg, msg_id):
     await sleep(30)
     if cancel_listener.get(msg_id):

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import Event
 
 from bot import (LOGGER, config_dict, non_queued_dl, non_queued_up,
@@ -111,6 +112,11 @@ async def start_from_queued():
                 for uid in list(queued_dl.keys()):
                     start_dl_from_queued(uid)
 
+async def list_checker(playlist_count, is_playlist=False):
+    if is_playlist:
+        if PLAYLIST_LIMIT := config_dict['PLAYLIST_LIMIT']:
+            if playlist_count > PLAYLIST_LIMIT:
+                return f'Playlist limit is {PLAYLIST_LIMIT}\n⚠ Your Playlist has {playlist_count} items.'
 
 async def limit_checker(size, listener, isTorrent=False, isMega=False, isDriveLink=False, isYtdlp=False):
     limit_exceeded = ''
@@ -152,6 +158,6 @@ async def limit_checker(size, listener, isTorrent=False, isMega=False, isDriveLi
         limit = STORAGE_THRESHOLD * 1024**3
         acpt = await sync_to_async(check_storage_threshold, size, limit, arch)
         if not acpt:
-            limit_exceeded = f'You must leave {get_readable_file_size(limit)} free storage.'
+            limit_exceeded = f'You must leave {get_readable_file_size(limit)} free storage'
     if limit_exceeded:
-        return f"{limit_exceeded}.\nYour File/Folder size is {get_readable_file_size(size)}"
+        return f"{limit_exceeded}.\n⚠ Your File/Folder size is {get_readable_file_size(size)}"

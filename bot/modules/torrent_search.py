@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from html import escape
 from urllib.parse import quote
 
@@ -191,7 +192,7 @@ async def __getResult(search_results, key, message, method):
         telegraph_content.append(msg)
 
     await editMessage(message, f"<b>Creating</b> {len(telegraph_content)} <b>Telegraph pages.</b>")
-    path = [(await telegraph.create_page(title='Server0x01 Torrent Search',
+    path = [(await telegraph.create_page(title='Z Torrent Search',
                                          content=content))["path"] for content in telegraph_content]
     if len(path) > 1:
         await editMessage(message, f"<b>Editing</b> {len(telegraph_content)} <b>Telegraph pages.</b>")
@@ -250,7 +251,7 @@ async def torrentSearch(_, message):
         if await request_limiter(message):
             return
         if message.chat.type != message.chat.type.PRIVATE:
-            msg, buttons = checking_access(user_id, buttons)
+            msg, buttons = await checking_access(user_id, buttons)
             if msg is not None:
                 msg += f'\n\n<b>User</b>: {tag}'
                 reply_message = await sendMessage(message, msg, buttons.build_menu(1))

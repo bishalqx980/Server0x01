@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import create_subprocess_exec, gather
 from asyncio.subprocess import PIPE
 from re import findall as re_findall
@@ -122,8 +123,7 @@ class RcloneTransferHelper:
                         return
                     return await self.__start_download(cmd, remote_type)
                 else:
-                    LOGGER.info(
-                        f"Reached maximum number of service accounts switching, which is {self.__sa_count}")
+                    LOGGER.info(f"Reached maximum number of service accounts switching, which is {self.__sa_count}")
 
             await self.__listener.onDownloadError(error[:4000])
 
@@ -137,7 +137,7 @@ class RcloneTransferHelper:
         remote_type = remote_opts['type']
 
         if remote_type == 'drive' and config_dict['USE_SERVICE_ACCOUNTS'] and config_path == 'rcl.conf' \
-                and await aiopath.isdir('accounts'):
+                and await aiopath.isdir('accounts') and not remote_opts.get('service_account_file'):
             config_path = await self.__create_rc_sa(remote, remote_opts)
             if config_path != 'rcl.conf':
                 sa_files = await listdir('accounts')
@@ -179,8 +179,7 @@ class RcloneTransferHelper:
                        for r in result if r['Path'] == self.name), 'err')
             link = f'https://drive.google.com/drive/folders/{fid}' if mime_type == 'Folder' else f'https://drive.google.com/uc?id={fid}&export=download'
         elif code != -9:
-            LOGGER.error(
-                f'while getting drive link. Path: {destination}. Stderr: {err}')
+            LOGGER.error(f'while getting drive link. Path: {destination}. Stderr: {err}')
             link = ''
         return link, destination
 
@@ -204,8 +203,7 @@ class RcloneTransferHelper:
                     cmd[7] = f"{remote}:{cmd[7].split(':', 1)[1]}"
                     return False if self.__is_cancelled else await self.__start_upload(cmd, remote_type)
                 else:
-                    LOGGER.info(
-                        f"Reached maximum number of service accounts switching, which is {self.__sa_count}")
+                    LOGGER.info(f"Reached maximum number of service accounts switching, which is {self.__sa_count}")
             await self.__listener.onUploadError(error[:4000])
             return False
         else:
@@ -216,7 +214,7 @@ class RcloneTransferHelper:
         rc_path = self.__listener.upPath.strip('/')
         if rc_path.startswith('mrcc:'):
             rc_path = rc_path.split('mrcc:', 1)[1]
-            oconfig_path = f'zcl/{self.__listener.message.from_user.id}.conf'
+            oconfig_path = f'rcl/{self.__listener.message.from_user.id}.conf'
         else:
             oconfig_path = 'rcl.conf'
 
@@ -244,7 +242,7 @@ class RcloneTransferHelper:
         fremote = oremote
         fconfig_path = oconfig_path
         if remote_type == 'drive' and config_dict['USE_SERVICE_ACCOUNTS'] and fconfig_path == 'rcl.conf' \
-                and await aiopath.isdir('accounts'):
+                and await aiopath.isdir('accounts') and not remote_opts.get('service_account_file'):
             fconfig_path = await self.__create_rc_sa(oremote, remote_opts)
             if fconfig_path != 'rcl.conf':
                 sa_files = await listdir('accounts')
@@ -257,8 +255,7 @@ class RcloneTransferHelper:
         method = 'move' if not self.__listener.seed or self.__listener.newDir else 'copy'
         cmd = self.__getUpdatedCommand(fconfig_path, path, f'{fremote}:{rc_path}', rcflags, method)
         if remote_type == 'drive' and not config_dict['RCLONE_FLAGS'] and not self.__listener.rcFlags:
-            cmd.extend(('--drive-chunk-size', '64M',
-                       '--drive-upload-cutoff', '32M'))
+            cmd.extend(('--drive-chunk-size', '64M', '--drive-upload-cutoff', '32M'))
         elif remote_type != 'drive':
             cmd.extend(('--retries-sleep', '3s'))
 
@@ -282,8 +279,7 @@ class RcloneTransferHelper:
             if code == 0:
                 link = res
             elif code != -9:
-                LOGGER.error(
-                    f'while getting link. Path: {destination} | Stderr: {err}')
+                LOGGER.error(f'while getting link. Path: {destination} | Stderr: {err}')
                 link = ''
         if self.__is_cancelled:
             return
@@ -307,8 +303,7 @@ class RcloneTransferHelper:
             if src_remote_type == 'drive' and dst_remote_type != 'drive':
                 cmd.append('--drive-acknowledge-abuse')
             elif dst_remote_type == 'drive' and src_remote_type != 'drive':
-                cmd.extend(('--drive-chunk-size', '64M',
-                           '--drive-upload-cutoff', '32M'))
+                cmd.extend(('--drive-chunk-size', '64M', '--drive-upload-cutoff', '32M'))
             elif src_remote_type == 'drive':
                 cmd.extend(('--tpslimit', '3', '--transfers', '3'))
 
@@ -326,7 +321,7 @@ class RcloneTransferHelper:
             await self.__listener.onUploadError(error[:4000])
             return None, None
         else:
-            if dst_remote_opt == 'drive':
+            if dst_remote_type == 'drive':
                 link, destination = await self.__get_gdrive_link(config_path, dst_remote, dst_path, mime_type)
                 return (None, None) if self.__is_cancelled else (link, destination)
             else:

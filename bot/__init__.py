@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from asyncio import Lock
 from collections import OrderedDict
 from faulthandler import enable as faulthandler_enable
@@ -27,7 +28,7 @@ setdefaulttimeout(600)
 botStartTime = time()
 
 basicConfig(format='%(levelname)s | From %(name)s -> %(module)s line no: %(lineno)d | %(message)s',
-                    handlers=[FileHandler('logs.txt'), StreamHandler()], level=INFO)
+                    handlers=[FileHandler('Logs.txt'), StreamHandler()], level=INFO)
 
 LOGGER = getLogger(__name__)
 
@@ -172,7 +173,7 @@ USER_SESSION_STRING = environ.get('USER_SESSION_STRING', '')
 if len(USER_SESSION_STRING) != 0:
     info("Creating client from USER_SESSION_STRING")
     user = tgClient('user', TELEGRAM_API, TELEGRAM_HASH, session_string=USER_SESSION_STRING,
-                    parse_mode=enums.ParseMode.HTML, no_updates=True).start()
+                    workers=1000, parse_mode=enums.ParseMode.HTML, no_updates=True).start()
     if user.me.is_bot:
         warning(
             "You added bot string for USER_SESSION_STRING this is not allowed! Exiting now")
@@ -188,9 +189,14 @@ if len(MEGA_EMAIL) == 0 or len(MEGA_PASSWORD) == 0:
     MEGA_EMAIL = ''
     MEGA_PASSWORD = ''
 
-UPTOBOX_TOKEN = environ.get('UPTOBOX_TOKEN', '')
-if len(UPTOBOX_TOKEN) == 0:
-    UPTOBOX_TOKEN = ''
+
+FILELION_API = environ.get('FILELION_API', '')
+if len(FILELION_API) == 0:
+    FILELION_API = ''
+
+STREAMWISH_API = environ.get('STREAMWISH_API', '')
+if len(STREAMWISH_API) == 0:
+    STREAMWISH_API = ''
 
 INDEX_URL = environ.get('INDEX_URL', '').rstrip("/")
 if len(INDEX_URL) == 0:
@@ -203,6 +209,10 @@ if len(SEARCH_API_LINK) == 0:
 LEECH_FILENAME_PREFIX = environ.get('LEECH_FILENAME_PREFIX', '')
 if len(LEECH_FILENAME_PREFIX) == 0:
     LEECH_FILENAME_PREFIX = ''
+
+LEECH_REMOVE_UNWANTED = environ.get('LEECH_REMOVE_UNWANTED', '')
+if len(LEECH_REMOVE_UNWANTED) == 0:
+    LEECH_REMOVE_UNWANTED = ''
 
 SEARCH_PLUGINS = environ.get('SEARCH_PLUGINS', '')
 if len(SEARCH_PLUGINS) == 0:
@@ -296,11 +306,11 @@ if len(BASE_URL) == 0:
 
 UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
 if len(UPSTREAM_REPO) == 0:
-    UPSTREAM_REPO = ''
+    UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
 
 UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
 if len(UPSTREAM_BRANCH) == 0:
-    UPSTREAM_BRANCH = ''
+    UPSTREAM_BRANCH = 'zh_run'
 
 RCLONE_SERVE_URL = environ.get('RCLONE_SERVE_URL', '')
 if len(RCLONE_SERVE_URL) == 0:
@@ -341,6 +351,9 @@ DIRECT_LIMIT = '' if len(DIRECT_LIMIT) == 0 else float(DIRECT_LIMIT)
 
 YTDLP_LIMIT = environ.get('YTDLP_LIMIT', '')
 YTDLP_LIMIT = '' if len(YTDLP_LIMIT) == 0 else float(YTDLP_LIMIT)
+
+PLAYLIST_LIMIT = environ.get('PLAYLIST_LIMIT', '')
+PLAYLIST_LIMIT = '' if len(PLAYLIST_LIMIT) == 0 else int(PLAYLIST_LIMIT)
 
 GDRIVE_LIMIT = environ.get('GDRIVE_LIMIT', '')
 GDRIVE_LIMIT = '' if len(GDRIVE_LIMIT) == 0 else float(GDRIVE_LIMIT)
@@ -392,6 +405,11 @@ FSUB_IDS = environ.get('FSUB_IDS', '')
 if len(FSUB_IDS) == 0:
     FSUB_IDS = ''
 
+USER_DUMP = environ.get('USER_DUMP', '')
+USER_DUMP = '' if len(USER_DUMP) == 0 else USER_DUMP
+if USER_DUMP.isdigit() or USER_DUMP.startswith('-'):
+    USER_DUMP = int(USER_DUMP)
+
 config_dict = {
     "AS_DOCUMENT": AS_DOCUMENT,
     "AUTHORIZED_CHATS": AUTHORIZED_CHATS,
@@ -406,11 +424,13 @@ config_dict = {
     "DUMP_CHAT_ID": DUMP_CHAT_ID,
     "EQUAL_SPLITS": EQUAL_SPLITS,
     "EXTENSION_FILTER": EXTENSION_FILTER,
+    "FILELION_API": FILELION_API,
     "GDRIVE_ID": GDRIVE_ID,
     "INCOMPLETE_TASK_NOTIFIER": INCOMPLETE_TASK_NOTIFIER,
     "INDEX_URL": INDEX_URL,
     "IS_TEAM_DRIVE": IS_TEAM_DRIVE,
     "LEECH_FILENAME_PREFIX": LEECH_FILENAME_PREFIX,
+    "LEECH_REMOVE_UNWANTED": LEECH_REMOVE_UNWANTED,
     "LEECH_SPLIT_SIZE": LEECH_SPLIT_SIZE,
     "MEDIA_GROUP": MEDIA_GROUP,
     "MEGA_EMAIL": MEGA_EMAIL,
@@ -433,13 +453,14 @@ config_dict = {
     "STATUS_LIMIT": STATUS_LIMIT,
     "STATUS_UPDATE_INTERVAL": STATUS_UPDATE_INTERVAL,
     "STOP_DUPLICATE": STOP_DUPLICATE,
+    'STREAMWISH_API': STREAMWISH_API,
     "SUDO_USERS": SUDO_USERS,
     "TELEGRAM_API": TELEGRAM_API,
     "TELEGRAM_HASH": TELEGRAM_HASH,
     "TORRENT_TIMEOUT": TORRENT_TIMEOUT,
     "UPSTREAM_REPO": UPSTREAM_REPO,
     "UPSTREAM_BRANCH": UPSTREAM_BRANCH,
-    "UPTOBOX_TOKEN": UPTOBOX_TOKEN,
+    "USER_DUMP": USER_DUMP,
     "USER_SESSION_STRING": USER_SESSION_STRING,
     "USE_SERVICE_ACCOUNTS": USE_SERVICE_ACCOUNTS,
     "WEB_PINCODE": WEB_PINCODE,
@@ -451,6 +472,7 @@ config_dict = {
     "TORRENT_LIMIT": TORRENT_LIMIT,
     "DIRECT_LIMIT": DIRECT_LIMIT,
     "YTDLP_LIMIT": YTDLP_LIMIT,
+    "PLAYLIST_LIMIT": PLAYLIST_LIMIT,
     "GDRIVE_LIMIT": GDRIVE_LIMIT,
     "CLONE_LIMIT": CLONE_LIMIT,
     "MEGA_LIMIT": MEGA_LIMIT,
@@ -607,7 +629,7 @@ info('qBittorrent-Nox started!')
 
 info("Creating client from BOT_TOKEN")
 bot = tgClient('bot', TELEGRAM_API, TELEGRAM_HASH, bot_token=BOT_TOKEN,
-               parse_mode=enums.ParseMode.HTML).start()
+               workers=1000, parse_mode=enums.ParseMode.HTML).start()
 bot_loop = bot.loop
 bot_name = bot.me.username
 scheduler = AsyncIOScheduler(timezone=str(get_localzone()), event_loop=bot_loop)

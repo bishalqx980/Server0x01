@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from io import FileIO
 from logging import ERROR, getLogger
 from os import listdir, makedirs
@@ -87,6 +88,7 @@ class GoogleDriveHelper:
                 credentials = pload(f)
         else:
             LOGGER.error('token.pickle not found!')
+            return
         return build('drive', 'v3', credentials=credentials, cache_discovery=False)
 
     def __alt_authorize(self):
@@ -206,9 +208,8 @@ class GoogleDriveHelper:
                 if item_path.lower().endswith(tuple(GLOBAL_EXTENSION_FILTER)):
                     raise Exception('This file extension is excluded by extension filter!')
                 mime_type = get_mime_type(item_path)
-                dir_id = gdrive_id
                 link = self.__upload_file(
-                    item_path, file_name, mime_type, dir_id, is_dir=False)
+                    item_path, file_name, mime_type, gdrive_id, is_dir=False)
                 if self.__is_cancelled:
                     return
                 if link is None:
@@ -244,7 +245,7 @@ class GoogleDriveHelper:
             elif self.__is_errored:
                 return
             async_to_sync(self.__listener.onUploadComplete, link, size, self.__total_files,
-                        self.__total_folders, mime_type, file_name, drive_id=dir_id)
+                          self.__total_folders, mime_type, file_name)
 
     def __upload_dir(self, input_directory, dest_id):
         list_dirs = listdir(input_directory)
@@ -399,23 +400,21 @@ class GoogleDriveHelper:
                 if self.__is_cancelled:
                     LOGGER.info("Deleting cloned data from Drive...")
                     self.deletefile(durl)
-                    return None, None, None, None, None, None
+                    return None, None, None, None, None
                 mime_type = 'Folder'
                 size = self.__processed_bytes
             else:
-                dir_id = gdrive_id
                 file = self.__copyFile(
-                    meta.get('id'), dir_id)
+                    meta.get('id'), gdrive_id)
                 msg += f'<b>Name: </b><code>{file.get("name")}</code>'
                 durl = self.__G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
                 if mime_type is None:
                     mime_type = 'File'
                 size = int(meta.get('size', 0))
-            return durl, size, mime_type, self.__total_files, self.__total_folders, dir_id
+            return durl, size, mime_type, self.__total_files, self.__total_folders
         except Exception as err:
             if isinstance(err, RetryError):
-                LOGGER.info(
-                    f"Total Attempts: {err.last_attempt.attempt_number}")
+                LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
                 err = err.last_attempt.exception()
             err = str(err).replace('>', '').replace('<', '')
             if "User rate limit exceeded" in err:
@@ -424,15 +423,14 @@ class GoogleDriveHelper:
                 if not self.__alt_auth:
                     token_service = self.__alt_authorize()
                     if token_service is not None:
-                        LOGGER.error(
-                            'File not found. Trying with token.pickle...')
+                        LOGGER.error('File not found. Trying with token.pickle...')
                         self.__service = token_service
-                        return self.clone(link)
+                        return self.clone(link, gdrive_id)
                 msg = "File not found."
             else:
                 msg = f"Error.\n{err}"
             async_to_sync(self.__listener.onUploadError, msg)
-            return None, None, None, None, None, None
+            return None, None, None, None, None
 
     def __cloneFolder(self, name, local_path, folder_id, dest_id):
         LOGGER.info(f"Syncing: {local_path}")
@@ -572,10 +570,8 @@ class GoogleDriveHelper:
         for drive_name, drive_dict in list_drives_dict.items():
             dir_id = drive_dict['drive_id']
             index_url = drive_dict['index_link']
-            isRecur = False if isRecursive and len(
-                dir_id) > 23 else isRecursive
-            response = self.__drive_query(
-                dir_id, fileName, stopDup, isRecur, itemType)
+            isRecur = False if isRecursive and len(dir_id) > 23 else isRecursive
+            response = self.__drive_query(dir_id, fileName, stopDup, isRecur, itemType)
             if not response["files"]:
                 if noMulti:
                     break
@@ -595,8 +591,7 @@ class GoogleDriveHelper:
                         msg += f"<b><a href={furl}>Drive Link</a></b> | "
                     if index_url:
                         if isRecur:
-                            url_path = "/".join([rquote(n, safe='')
-                                                for n in self.__get_recursive_list(file, dir_id)])
+                            url_path = "/".join([rquote(n, safe='') for n in self.__get_recursive_list(file, dir_id)])
                         else:
                             url_path = rquote(f'{file.get("name")}', safe='')
                         url = f'{index_url}/{url_path}/'
@@ -612,8 +607,7 @@ class GoogleDriveHelper:
                         msg += f"<b><a href={furl}>Drive Link</a></b> | "
                     if index_url:
                         if isRecur:
-                            url_path = "/".join(rquote(n, safe='')
-                                                for n in self.__get_recursive_list(file, dir_id))
+                            url_path = "/".join(rquote(n, safe='') for n in self.__get_recursive_list(file, dir_id))
                         else:
                             url_path = rquote(f'{file.get("name")}')
                         url = f'{index_url}/{url_path}'
@@ -631,7 +625,6 @@ class GoogleDriveHelper:
 
         if msg != '':
             telegraph_content.append(msg)
-
         return telegraph_content, contents_no
 
     def count(self, link):

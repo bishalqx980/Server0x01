@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from base64 import b64encode
 from re import match as re_match
 from asyncio import sleep
@@ -14,6 +15,8 @@ from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import MIRROR_HELP_MESSAGE
 from bot.helper.utils import none_admin_utils, stop_duplicate_tasks
 from bot.helper.listeners.tasks_listener import MirrorLeechListener
+
+from bot.helper.mirror_utils.download_utils.direct_downloader import add_direct_download
 from bot.helper.mirror_utils.download_utils.aria2_download import add_aria2c_download
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
 from bot.helper.mirror_utils.download_utils.gd_download import add_gd_download
@@ -58,7 +61,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
                 '-up'      : '',       '-upload'  : '',
                 '-u'       : '',       '-username': '',
                 '-p'       : '',       '-password': '',
-                '-rcf'     : ''
+                '-rcf'     : '',       '-h'       : ''
             }
 
     args = arg_parser(input_list[1:], arg_base)
@@ -80,6 +83,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
     index_link  = args['-index']
     rcf         = args['-rcf']
     link        = args['link']
+    headers     = args['-h']
     bulk_start  = 0
     bulk_end    = 0
     ratio       = None
@@ -262,13 +266,16 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             process_msg = await sendMessage(message, f"Processing: <code>{link}</code>")
             try:
                 link = await sync_to_async(direct_link_generator, link)
-                LOGGER.info(f"Generated link: {link}")
-                await editMessage(process_msg, f"Generated link: <code>{link}</code>")
+                if isinstance(link, tuple):
+                    link, headers = link
+                elif isinstance(link, str):
+                    LOGGER.info(f"Generated link: {link}")
             except DirectDownloadLinkException as e:
-                LOGGER.info(str(e))
-                await delete_links(message)
-                if str(e).startswith('ERROR:'):
-                    await editMessage(process_msg, str(e))
+                e = str(e)
+                if 'This link requires a password!' not in e:
+                    LOGGER.info(e)
+                if e.startswith('ERROR:'):
+                    await sendMessage(message, e)
                     return
             await process_msg.delete()
 
@@ -289,7 +296,7 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             return
         elif up not in ['rcl', 'gd']:
             if up.startswith('mrcc:'):
-                config_path = f'zcl/{message.from_user.id}.conf'
+                config_path = f'rcl/{message.from_user.id}.conf'
             else:
                 config_path = 'rcl.conf'
             if not await aiopath.exists(config_path):
@@ -298,7 +305,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         if up != 'gd' and not is_rclone_path(up):
             await sendMessage(message, 'Wrong Rclone Upload Destination!')
             return
-
+    elif up.isdigit() or up.startswith('-'):
+        up = int(up)
     if link == 'rcl':
         link = await RcloneList(client, message).get_rclone_path('rcd')
         if not is_rclone_path(link):
@@ -317,10 +325,12 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
 
     if file_ is not None:
         await TelegramDownloadHelper(listener).add_download(reply_to, f'{path}/', name)
+    elif isinstance(link, dict):
+        await add_direct_download(link, path, listener, name)
     elif is_rclone_path(link):
         if link.startswith('mrcc:'):
             link = link.split('mrcc:', 1)[1]
-            config_path = f'zcl/{message.from_user.id}.conf'
+            config_path = f'rcl/{message.from_user.id}.conf'
         else:
             config_path = 'rcl.conf'
         if not await aiopath.exists(config_path):
@@ -328,10 +338,11 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
             return
         await add_rclone_download(link, config_path, f'{path}/', name, listener)
     elif is_gdrive_link(link):
-        if not any([compress, extract, isLeech]):
-            gmsg = f"Use /{BotCommands.CloneCommand} to clone Google Drive file/folder\n\n"
-            gmsg += f"Use /{BotCommands.MirrorCommand[0]} {link} -zip to make zip of Google Drive folder\n\n"
-            gmsg += f"Use /{BotCommands.MirrorCommand[0]} {link} -unzip to extracts Google Drive archive folder/file"
+        if up == 'gd' and not any([compress, extract, isLeech]):
+            gmsg = f"Use <code>/{BotCommands.LeechCommand[0]} {link}</code> to leech Google Drive file/folder\n\n"
+            gmsg += f"Use <code>/{BotCommands.CloneCommand} {link}</code> to clone Google Drive file/folder\n\n"
+            gmsg += f"Use <code>/{BotCommands.MirrorCommand[0]} {link}</code> -zip to make zip of Google Drive folder\n\n"
+            gmsg += f"Use <code>/{BotCommands.MirrorCommand[0]} {link}</code> -unzip to extracts Google Drive archive folder/file"
             reply_message = await sendMessage(message, gmsg)
             await auto_delete_message(message, reply_message)
             await delete_links(message)
@@ -346,8 +357,8 @@ async def _mirror_leech(client, message, isQbit=False, isLeech=False, sameDir=No
         pssw = args['-p'] or args['-password']
         if ussr or pssw:
             auth = f"{ussr}:{pssw}"
-            auth = f"authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
-        await add_aria2c_download(link, path, listener, name, auth, ratio, seed_time)
+            headers += f" authorization: Basic {b64encode(auth.encode()).decode('ascii')}"
+        await add_aria2c_download(link, path, listener, name, headers, ratio, seed_time)
 
 
 async def mirror(client, message):

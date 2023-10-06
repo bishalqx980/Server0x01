@@ -1,16 +1,12 @@
+#!/usr/bin/env python3
 from asyncio import sleep
 from html import escape
 from logging import ERROR, getLogger
-from os import path as ospath
-from os import walk
-from re import match as re_match
-from re import sub as re_sub
+from os import path as ospath, walk
+from re import match as re_match, sub as re_sub
 from time import time
 
-from aiofiles.os import makedirs
-from aiofiles.os import path as aiopath
-from aiofiles.os import remove as aioremove
-from aiofiles.os import rename as aiorename
+from aiofiles.os import makedirs, path as aiopath, remove as aioremove, rename as aiorename
 from aioshutil import copy
 from natsort import natsorted
 from PIL import Image
@@ -19,15 +15,10 @@ from pyrogram.types import InputMediaDocument, InputMediaVideo
 from tenacity import (RetryError, retry, retry_if_exception_type,
                       stop_after_attempt, wait_exponential)
 
-from bot import (GLOBAL_EXTENSION_FILTER, IS_PREMIUM_USER, bot, config_dict,
-                 user, user_data)
-from bot.helper.ext_utils.bot_utils import (get_readable_file_size,
-                                            sync_to_async)
-from bot.helper.ext_utils.fs_utils import (clean_unwanted, get_base_name,
-                                           is_archive)
-from bot.helper.ext_utils.leech_utils import (get_document_type,
-                                              get_media_info, take_ss)
-from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot import GLOBAL_EXTENSION_FILTER, IS_PREMIUM_USER, bot, config_dict, user, user_data
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, sync_to_async
+from bot.helper.ext_utils.fs_utils import clean_unwanted, get_base_name, is_archive
+from bot.helper.ext_utils.leech_utils import get_document_type, get_media_info, take_ss, remove_unwanted, get_audio_thumb
 
 LOGGER = getLogger(__name__)
 getLogger("pyrogram").setLevel(ERROR)
@@ -52,10 +43,12 @@ class TgUploader:
         self.__last_msg_in_group = False
         self.__up_path = ''
         self.__lprefix = ''
+        self.__lremname = ''
         self.__as_doc = False
         self.__media_group = False
         self.__sent_DMmsg = None
         self.__button = None
+        self.__upload_dest = None
 
     async def __upload_progress(self, current, total):
         if self.__is_cancelled:
@@ -69,13 +62,17 @@ class TgUploader:
     async def __user_settings(self):
         user_id = self.__listener.message.from_user.id
         user_dict = user_data.get(user_id, {})
-        self.__as_doc = user_dict.get('as_doc') or config_dict['AS_DOCUMENT']
+        self.__as_doc = user_dict.get(
+            'as_doc', False) or (config_dict['AS_DOCUMENT'] if 'as_doc' not in user_dict else False)
         self.__media_group = user_dict.get(
-            'media_group') or config_dict['MEDIA_GROUP']
+            'media_group') or (config_dict['MEDIA_GROUP'] if 'media_group' not in user_dict else False)
         self.__lprefix = user_dict.get(
-            'lprefix') or config_dict['LEECH_FILENAME_PREFIX']
+            'lprefix') or (config_dict['LEECH_FILENAME_PREFIX'] if 'lprefix' not in user_dict else '')
+        self.__lremname = user_dict.get(
+            'lremname') or (config_dict['LEECH_REMOVE_UNWANTED'] if 'lremname' not in user_dict else '')
         if not await aiopath.exists(self.__thumb):
             self.__thumb = None
+        self.__upload_dest = user_dict.get('user_dump') or config_dict['USER_DUMP']
 
     async def __msg_to_reply(self):
         if DUMP_CHAT_ID := config_dict['DUMP_CHAT_ID']:
@@ -118,8 +115,9 @@ class TgUploader:
         return True
 
     async def __prepare_file(self, file_, dirpath):
-        if self.__lprefix:
-            cap_mono = f"{self.__lprefix} <code>{file_}</code>"
+        if self.__lprefix or self.__lremname:
+            file_ = await remove_unwanted(file_, self.__lremname)
+            cap_mono = f"<b>{self.__lprefix} {file_}</b>"
             self.__lprefix = re_sub('<.*?>', '', self.__lprefix)
             if self.__listener.seed and not self.__listener.newDir and not dirpath.endswith("/splited_files_z"):
                 dirpath = f'{dirpath}/copied_z'
@@ -131,7 +129,7 @@ class TgUploader:
                 await aiorename(self.__up_path, new_path)
                 self.__up_path = new_path
         else:
-            cap_mono = f"<code>{file_}</code>"
+            cap_mono = f"<b>{file_}</b>"
         if len(file_) > 60:
             if is_archive(file_):
                 name = get_base_name(file_)
@@ -309,6 +307,20 @@ class TgUploader:
                     f"Error while sending dm {err.__class__.__name__}")
             self.__sent_DMmsg = None
 
+    async def __send_to_udump(self):
+        try:
+            await bot.copy_message(
+                chat_id=self.__upload_dest, 
+                from_chat_id=self.__sent_msg.chat.id, 
+                message_id=self.__sent_msg.id
+            )
+        except Exception as err:
+            if isinstance(err, RPCError):
+                LOGGER.error(f"Error while sending to user dump {err.NAME}: {err.MESSAGE}")
+            else:
+                LOGGER.error(f"Error while sending to user dump {err.__class__.__name__}")
+            self.__upload_dest = None
+
     @retry(wait=wait_exponential(multiplier=2, min=4, max=8), stop=stop_after_attempt(3),
            retry=retry_if_exception_type(Exception))
     async def __upload_file(self, cap_mono, file, force_document=False):
@@ -324,6 +336,8 @@ class TgUploader:
                 thumb_path = f"{self.__path}/yt-dlp-thumb/{file_name}.jpg"
                 if await aiopath.isfile(thumb_path):
                     thumb = thumb_path
+                elif is_audio and not is_video:
+                    thumb = await get_audio_thumb(self.__up_path)
 
             if self.__as_doc or force_document or (not is_video and not is_audio and not is_image):
                 key = 'documents'
@@ -416,8 +430,12 @@ class TgUploader:
                         self.__last_msg_in_group = True
                 elif self.__sent_DMmsg:
                     await self.__send_dm()
+                if self.__upload_dest:
+                    await self.__send_to_udump()
             elif self.__sent_DMmsg:
                 await self.__send_dm()
+            if self.__upload_dest:
+                await self.__send_to_udump()
             if self.__thumb is None and thumb is not None and await aiopath.exists(thumb):
                 await aioremove(thumb)
         except FloodWait as f:

@@ -1,7 +1,8 @@
+#!/usr/bin/env python3
 from asyncio import create_subprocess_exec
 from asyncio.subprocess import PIPE
 from os import path as ospath
-from re import search as re_search
+from re import search as re_search, sub as re_sub
 from time import time
 
 from aiofiles.os import mkdir
@@ -51,8 +52,8 @@ async def get_media_info(path):
         return 0, None, None
     duration = round(float(fields.get('duration', 0)))
     tags = fields.get('tags', {})
-    artist = tags.get('artist') or tags.get('ARTIST')
-    title = tags.get('title') or tags.get('TITLE')
+    artist = tags.get('artist') or tags.get('ARTIST') or tags.get("Artist")
+    title = tags.get('title') or tags.get('TITLE') or tags.get("Title")
     return duration, artist, title
 
 
@@ -87,6 +88,22 @@ async def get_document_type(path):
     return is_video, is_audio, is_image
 
 
+async def get_audio_thumb(audio_file):
+    des_dir = 'Thumbnails'
+    if not await aiopath.exists(des_dir):
+        await mkdir(des_dir)
+    des_dir = ospath.join(des_dir, f"{time()}.jpg")
+    cmd = ["render", "-hide_banner", "-loglevel", "error",
+           "-i", audio_file, "-an", "-vcodec", "copy", des_dir]
+    status = await create_subprocess_exec(*cmd, stderr=PIPE)
+    if await status.wait() != 0 or not await aiopath.exists(des_dir):
+        err = (await status.stderr.read()).decode().strip()
+        LOGGER.error(
+            f'Error while extracting thumbnail from audio. Name: {audio_file} stderr: {err}')
+        return None
+    return des_dir
+
+
 async def take_ss(video_file, duration):
     des_dir = 'Thumbnails'
     if not await aiopath.exists(des_dir):
@@ -103,7 +120,7 @@ async def take_ss(video_file, duration):
     if await status.wait() != 0 or not await aiopath.exists(des_dir):
         err = (await status.stderr.read()).decode().strip()
         LOGGER.error(
-            f'Error while extracting thumbnail. Name: {video_file} stderr: {err}')
+            f'Error while extracting thumbnail from video. Name: {video_file} stderr: {err}')
         return None
     return des_dir
 
@@ -121,7 +138,7 @@ async def split_file(path, size, file_, dirpath, split_size, listener, start_tim
         'split_size') or config_dict['LEECH_SPLIT_SIZE']
     leech_split_size = min(leech_split_size, MAX_SPLIT_SIZE)
     parts = -(-size // leech_split_size)
-    if (user_dict.get('equal_splits') or config_dict['EQUAL_SPLITS']) and not inLoop:
+    if (user_dict.get('equal_splits') or config_dict['EQUAL_SPLITS'] and 'equal_splits' not in user_dict) and not inLoop:
         split_size = ((size + parts - 1) // parts) + 1000
     if (await get_document_type(path))[0]:
         if multi_streams:
@@ -189,3 +206,23 @@ async def split_file(path, size, file_, dirpath, split_size, listener, start_tim
             err = (await listener.suproc.stderr.read()).decode().strip()
             LOGGER.error(err)
     return True
+
+
+async def remove_unwanted(file_, lremname):
+    if lremname and not lremname.startswith('|'):
+        lremname = f"|{lremname}"
+    lremname = lremname.replace('\s', ' ')
+    div = lremname.split("|")
+    zName = ospath.splitext(file_)[0]
+    for rep in range(1, len(div)):
+        args = div[rep].split(":")
+        num_args = len(args)
+        if num_args == 3:
+            zName = re_sub(args[0], args[1], zName, int(args[2]))
+        elif num_args == 2:
+            zName = re_sub(args[0], args[1], zName)
+        elif num_args == 1:
+            zName = re_sub(args[0], '', zName)
+    file_ = zName + ospath.splitext(file_)[1]
+    LOGGER.info(f"New File Name: {file_}")
+    return file_

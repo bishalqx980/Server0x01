@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from string import ascii_letters
 from random import SystemRandom
 from asyncio import sleep
@@ -84,7 +85,7 @@ class TelegraphHelper:
                     nxt_page += 1
             await self.edit_page(
                 path=path[prev_page],
-                title='Server0x01 Torrent Search',
+                title='Z Torrent Search',
                 content=content
             )
         return
@@ -102,5 +103,5 @@ class TelegraphHelper:
 
 
 telegraph = TelegraphHelper(
-    'Server0x01', 'https://t.me/Server0x01')
+    'Serverv0x01', 'https://t.me/Server0x01')
 bot_loop.run_until_complete(telegraph.create_account())

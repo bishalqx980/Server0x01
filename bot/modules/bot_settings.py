@@ -1,4 +1,5 @@
-from asyncio import create_subprocess_exec, create_subprocess_shell, sleep
+#!/usr/bin/env python3
+from asyncio import create_subprocess_exec, create_subprocess_shell, sleep, gather
 from collections import OrderedDict
 from functools import partial
 from io import BytesIO
@@ -22,7 +23,7 @@ from bot import (DATABASE_URL, GLOBAL_EXTENSION_FILTER, IS_PREMIUM_USER,
 from bot.helper.ext_utils.bot_utils import (get_readable_file_size, new_thread,
                                             set_commands, setInterval,
                                             sync_to_async)
-from bot.helper.ext_utils.db_handler import DbManger
+from bot.helper.ext_utils.db_handler import DbManager
 from bot.helper.ext_utils.task_manager import start_from_queued
 from bot.helper.mirror_utils.rclone_utils.serve import rclone_serve_booter
 from bot.helper.telegram_helper.bot_commands import BotCommands
@@ -41,9 +42,11 @@ default_values = {'AUTO_DELETE_MESSAGE_DURATION': 120,
                   'DOWNLOAD_DIR': '/usr/src/app/downloads/',
                   'LEECH_SPLIT_SIZE': MAX_SPLIT_SIZE,
                   'RSS_DELAY': 900,
-                  'STATUS_UPDATE_INTERVAL': 15,
+                  'STATUS_UPDATE_INTERVAL': 5,
                   'SEARCH_LIMIT': 0,
-                  'UPSTREAM_BRANCH': 'hk_code'}
+                  'UPSTREAM_REPO': 'https://github.com/bishalqx980/Server0x01',
+                  'UPSTREAM_BRANCH': 'upstream',
+                  'TORRENT_TIMEOUT': '600'}
 
 
 async def load_config():
@@ -107,7 +110,7 @@ async def load_config():
     if len(EXTENSION_FILTER) > 0:
         fx = EXTENSION_FILTER.split()
         GLOBAL_EXTENSION_FILTER.clear()
-        GLOBAL_EXTENSION_FILTER.append('.aria2')
+        GLOBAL_EXTENSION_FILTER.extend(['aria2', '!qB'])
         for x in fx:
             if x.strip().startswith('.'):
                 x = x.lstrip('.')
@@ -119,9 +122,13 @@ async def load_config():
         MEGA_EMAIL = ''
         MEGA_PASSWORD = ''
 
-    UPTOBOX_TOKEN = environ.get('UPTOBOX_TOKEN', '')
-    if len(UPTOBOX_TOKEN) == 0:
-        UPTOBOX_TOKEN = ''
+    FILELION_API = environ.get('FILELION_API', '')
+    if len(FILELION_API) == 0:
+        FILELION_API = ''
+
+    STREAMWISH_API = environ.get('STREAMWISH_API', '')
+    if len(STREAMWISH_API) == 0:
+        STREAMWISH_API = ''
 
     INDEX_URL = environ.get('INDEX_URL', '').rstrip("/")
     if len(INDEX_URL) == 0:
@@ -134,6 +141,10 @@ async def load_config():
     LEECH_FILENAME_PREFIX = environ.get('LEECH_FILENAME_PREFIX', '')
     if len(LEECH_FILENAME_PREFIX) == 0:
         LEECH_FILENAME_PREFIX = ''
+
+    LEECH_REMOVE_UNWANTED = environ.get('LEECH_REMOVE_UNWANTED', '')
+    if len(LEECH_REMOVE_UNWANTED) == 0:
+        LEECH_REMOVE_UNWANTED = ''
 
     SEARCH_PLUGINS = environ.get('SEARCH_PLUGINS', '')
     if len(SEARCH_PLUGINS) == 0:
@@ -177,11 +188,18 @@ async def load_config():
     DUMP_CHAT_ID = environ.get('DUMP_CHAT_ID', '')
     DUMP_CHAT_ID = '' if len(DUMP_CHAT_ID) == 0 else int(DUMP_CHAT_ID)
 
+    USER_DUMP = environ.get('USER_DUMP', '')
+    USER_DUMP = '' if len(USER_DUMP) == 0 else USER_DUMP
+    if USER_DUMP.isdigit() or USER_DUMP.startswith('-'):
+        USER_DUMP = int(USER_DUMP)
+
     STATUS_LIMIT = environ.get('STATUS_LIMIT', '')
-    STATUS_LIMIT = 8 if len(STATUS_LIMIT) == 0 else int(STATUS_LIMIT)
+    STATUS_LIMIT = 5 if len(STATUS_LIMIT) == 0 else int(STATUS_LIMIT)
 
     RSS_CHAT_ID = environ.get('RSS_CHAT_ID', '')
-    RSS_CHAT_ID = '' if len(RSS_CHAT_ID) == 0 else int(RSS_CHAT_ID)
+    RSS_CHAT_ID = '' if len(RSS_CHAT_ID) == 0 else RSS_CHAT_ID
+    if RSS_CHAT_ID.isdigit() or RSS_CHAT_ID.startswith('-'):
+        RSS_CHAT_ID = int(RSS_CHAT_ID)
 
     RSS_DELAY = environ.get('RSS_DELAY', '')
     RSS_DELAY = 900 if len(RSS_DELAY) == 0 else int(RSS_DELAY)
@@ -201,7 +219,7 @@ async def load_config():
                     LOGGER.error(e)
         aria2_options['bt-stop-timeout'] = '0'
         if DATABASE_URL:
-            await DbManger().update_aria2('bt-stop-timeout', '0')
+            await DbManager().update_aria2('bt-stop-timeout', '0')
         TORRENT_TIMEOUT = ''
     else:
         for download in downloads:
@@ -212,7 +230,7 @@ async def load_config():
                     LOGGER.error(e)
         aria2_options['bt-stop-timeout'] = TORRENT_TIMEOUT
         if DATABASE_URL:
-            await DbManger().update_aria2('bt-stop-timeout', TORRENT_TIMEOUT)
+            await DbManager().update_aria2('bt-stop-timeout', TORRENT_TIMEOUT)
         TORRENT_TIMEOUT = int(TORRENT_TIMEOUT)
 
     QUEUE_ALL = environ.get('QUEUE_ALL', '')
@@ -227,7 +245,7 @@ async def load_config():
     INCOMPLETE_TASK_NOTIFIER = environ.get('INCOMPLETE_TASK_NOTIFIER', '')
     INCOMPLETE_TASK_NOTIFIER = INCOMPLETE_TASK_NOTIFIER.lower() == 'true'
     if not INCOMPLETE_TASK_NOTIFIER and DATABASE_URL:
-        await DbManger().trunc_table('tasks')
+        await DbManager().trunc_table('tasks')
 
     STOP_DUPLICATE = environ.get('STOP_DUPLICATE', '')
     STOP_DUPLICATE = STOP_DUPLICATE.lower() == 'true'
@@ -278,11 +296,11 @@ async def load_config():
 
     UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
     if len(UPSTREAM_REPO) == 0:
-        UPSTREAM_REPO = ''
+        UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
 
     UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
     if len(UPSTREAM_BRANCH) == 0:
-        UPSTREAM_BRANCH = 'hk_code'
+        UPSTREAM_BRANCH = 'main'
 
     LOG_CHAT_ID = environ.get('LOG_CHAT_ID', '')
     if LOG_CHAT_ID.startswith('-100'):
@@ -308,6 +326,9 @@ async def load_config():
     YTDLP_LIMIT = environ.get('YTDLP_LIMIT', '')
     YTDLP_LIMIT = '' if len(YTDLP_LIMIT) == 0 else float(YTDLP_LIMIT)
 
+    PLAYLIST_LIMIT = environ.get('PLAYLIST_LIMIT', '')
+    PLAYLIST_LIMIT = '' if len(PLAYLIST_LIMIT) == 0 else int(PLAYLIST_LIMIT)
+
     GDRIVE_LIMIT = environ.get('GDRIVE_LIMIT', '')
     GDRIVE_LIMIT = '' if len(GDRIVE_LIMIT) == 0 else float(GDRIVE_LIMIT)
 
@@ -330,7 +351,7 @@ async def load_config():
     STOP_DUPLICATE_TASKS = STOP_DUPLICATE_TASKS.lower() == 'true'
 
     if not STOP_DUPLICATE_TASKS and DATABASE_URL:
-        await DbManger().clear_download_links()
+        await DbManager().clear_download_links()
 
     DISABLE_DRIVE_LINK = environ.get('DISABLE_DRIVE_LINK', '')
     DISABLE_DRIVE_LINK = DISABLE_DRIVE_LINK.lower() == 'true'
@@ -432,88 +453,86 @@ async def load_config():
     if not await aiopath.exists('accounts'):
         USE_SERVICE_ACCOUNTS = False
 
-    temp_dict = {
-        "AS_DOCUMENT": AS_DOCUMENT,
-        "AUTHORIZED_CHATS": AUTHORIZED_CHATS,
-        "AUTO_DELETE_MESSAGE_DURATION": AUTO_DELETE_MESSAGE_DURATION,
-        "BASE_URL": BASE_URL,
-        "BASE_URL_PORT": BASE_URL_PORT,
-        "BOT_TOKEN": BOT_TOKEN,
-        "CMD_SUFFIX": CMD_SUFFIX,
-        "DATABASE_URL": DATABASE_URL,
-        "DEFAULT_UPLOAD": DEFAULT_UPLOAD,
-        "DOWNLOAD_DIR": DOWNLOAD_DIR,
-        "DUMP_CHAT_ID": DUMP_CHAT_ID,
-        "EQUAL_SPLITS": EQUAL_SPLITS,
-        "EXTENSION_FILTER": EXTENSION_FILTER,
-        "GDRIVE_ID": GDRIVE_ID,
-        "INCOMPLETE_TASK_NOTIFIER": INCOMPLETE_TASK_NOTIFIER,
-        "INDEX_URL": INDEX_URL,
-        "IS_TEAM_DRIVE": IS_TEAM_DRIVE,
-        "LEECH_FILENAME_PREFIX": LEECH_FILENAME_PREFIX,
-        "LEECH_SPLIT_SIZE": LEECH_SPLIT_SIZE,
-        "MEDIA_GROUP": MEDIA_GROUP,
-        "MEGA_EMAIL": MEGA_EMAIL,
-        "MEGA_PASSWORD": MEGA_PASSWORD,
-        "OWNER_ID": OWNER_ID,
-        "QUEUE_ALL": QUEUE_ALL,
-        "QUEUE_DOWNLOAD": QUEUE_DOWNLOAD,
-        "QUEUE_UPLOAD": QUEUE_UPLOAD,
-        "RCLONE_FLAGS": RCLONE_FLAGS,
-        "RCLONE_PATH": RCLONE_PATH,
-        "RCLONE_SERVE_URL": RCLONE_SERVE_URL,
-        "RCLONE_SERVE_PORT": RCLONE_SERVE_PORT,
-        "RCLONE_SERVE_USER": RCLONE_SERVE_USER,
-        "RCLONE_SERVE_PASS": RCLONE_SERVE_PASS,
-        "RSS_CHAT_ID": RSS_CHAT_ID,
-        "RSS_DELAY": RSS_DELAY,
-        "SEARCH_API_LINK": SEARCH_API_LINK,
-        "SEARCH_LIMIT": SEARCH_LIMIT,
-        "SEARCH_PLUGINS": SEARCH_PLUGINS,
-        "STATUS_LIMIT": STATUS_LIMIT,
-        "STATUS_UPDATE_INTERVAL": STATUS_UPDATE_INTERVAL,
-        "STOP_DUPLICATE": STOP_DUPLICATE,
-        "SUDO_USERS": SUDO_USERS,
-        "TELEGRAM_API": TELEGRAM_API,
-        "TELEGRAM_HASH": TELEGRAM_HASH,
-        "TORRENT_TIMEOUT": TORRENT_TIMEOUT,
-        "UPSTREAM_REPO": UPSTREAM_REPO,
-        "UPSTREAM_BRANCH": UPSTREAM_BRANCH,
-        "UPTOBOX_TOKEN": UPTOBOX_TOKEN,
-        "USER_SESSION_STRING": USER_SESSION_STRING,
-        "USE_SERVICE_ACCOUNTS": USE_SERVICE_ACCOUNTS,
-        "WEB_PINCODE": WEB_PINCODE,
-        "YT_DLP_OPTIONS": YT_DLP_OPTIONS,
-        "USER_MAX_TASKS": USER_MAX_TASKS,
-        "FSUB_IDS": FSUB_IDS,
-        "LOG_CHAT_ID": LOG_CHAT_ID,
-        "STORAGE_THRESHOLD": STORAGE_THRESHOLD,
-        "TORRENT_LIMIT": TORRENT_LIMIT,
-        "DIRECT_LIMIT": DIRECT_LIMIT,
-        "YTDLP_LIMIT": YTDLP_LIMIT,
-        "GDRIVE_LIMIT": GDRIVE_LIMIT,
-        "CLONE_LIMIT": CLONE_LIMIT,
-        "MEGA_LIMIT": MEGA_LIMIT,
-        "LEECH_LIMIT": LEECH_LIMIT,
-        "ENABLE_RATE_LIMIT": ENABLE_RATE_LIMIT,
-        "ENABLE_MESSAGE_FILTER": ENABLE_MESSAGE_FILTER,
-        "STOP_DUPLICATE_TASKS": STOP_DUPLICATE_TASKS,
-        "DISABLE_DRIVE_LINK": DISABLE_DRIVE_LINK,
-        "SET_COMMANDS": SET_COMMANDS,
-        "DISABLE_LEECH": DISABLE_LEECH,
-        "REQUEST_LIMITS": REQUEST_LIMITS,
-        "DM_MODE": DM_MODE,
-        "DELETE_LINKS": DELETE_LINKS,
-        "TOKEN_TIMEOUT": TOKEN_TIMEOUT
-    }
-    temp_dict = OrderedDict(sorted(temp_dict.items()))
-    config_dict.update(temp_dict)
+    config_dict.update({'AS_DOCUMENT': AS_DOCUMENT,
+                        'AUTHORIZED_CHATS': AUTHORIZED_CHATS,
+                        'AUTO_DELETE_MESSAGE_DURATION': AUTO_DELETE_MESSAGE_DURATION,
+                        'BASE_URL': BASE_URL,
+                        'BASE_URL_PORT': BASE_URL_PORT,
+                        'BOT_TOKEN': BOT_TOKEN,
+                        'CMD_SUFFIX': CMD_SUFFIX,
+                        'CLONE_LIMIT': CLONE_LIMIT,
+                        'DATABASE_URL': DATABASE_URL,
+                        'DEFAULT_UPLOAD': DEFAULT_UPLOAD,
+                        'DOWNLOAD_DIR': DOWNLOAD_DIR,
+                        'DUMP_CHAT_ID': DUMP_CHAT_ID,
+                        'DIRECT_LIMIT': DIRECT_LIMIT,
+                        'DISABLE_DRIVE_LINK': DISABLE_DRIVE_LINK,
+                        'DISABLE_LEECH': DISABLE_LEECH,
+                        'DM_MODE': DM_MODE,
+                        'DELETE_LINKS': DELETE_LINKS,
+                        'EQUAL_SPLITS': EQUAL_SPLITS,
+                        'EXTENSION_FILTER': EXTENSION_FILTER,
+                        'ENABLE_RATE_LIMIT': ENABLE_RATE_LIMIT,
+                        'ENABLE_MESSAGE_FILTER': ENABLE_MESSAGE_FILTER,
+                        'FSUB_IDS': FSUB_IDS,
+                        'FILELION_API': FILELION_API,
+                        'GDRIVE_ID': GDRIVE_ID,
+                        'GDRIVE_LIMIT': GDRIVE_LIMIT,
+                        'INCOMPLETE_TASK_NOTIFIER': INCOMPLETE_TASK_NOTIFIER,
+                        'INDEX_URL': INDEX_URL,
+                        'IS_TEAM_DRIVE': IS_TEAM_DRIVE,
+                        'LEECH_FILENAME_PREFIX': LEECH_FILENAME_PREFIX,
+                        'LEECH_REMOVE_UNWANTED': LEECH_REMOVE_UNWANTED,
+                        'LEECH_SPLIT_SIZE': LEECH_SPLIT_SIZE,
+                        'LOG_CHAT_ID': LOG_CHAT_ID,
+                        'LEECH_LIMIT': LEECH_LIMIT,
+                        'MEGA_LIMIT': MEGA_LIMIT,
+                        'MEDIA_GROUP': MEDIA_GROUP,
+                        'MEGA_EMAIL': MEGA_EMAIL,
+                        'MEGA_PASSWORD': MEGA_PASSWORD,
+                        'OWNER_ID': OWNER_ID,
+                        'QUEUE_ALL': QUEUE_ALL,
+                        'QUEUE_DOWNLOAD': QUEUE_DOWNLOAD,
+                        'QUEUE_UPLOAD': QUEUE_UPLOAD,
+                        'RCLONE_FLAGS': RCLONE_FLAGS,
+                        'RCLONE_PATH': RCLONE_PATH,
+                        'RCLONE_SERVE_URL': RCLONE_SERVE_URL,
+                        'RCLONE_SERVE_PORT': RCLONE_SERVE_PORT,
+                        'RCLONE_SERVE_USER': RCLONE_SERVE_USER,
+                        'RCLONE_SERVE_PASS': RCLONE_SERVE_PASS,
+                        'RSS_CHAT_ID': RSS_CHAT_ID,
+                        'RSS_DELAY': RSS_DELAY,
+                        'REQUEST_LIMITS': REQUEST_LIMITS,
+                        'SEARCH_API_LINK': SEARCH_API_LINK,
+                        'SEARCH_LIMIT': SEARCH_LIMIT,
+                        'SEARCH_PLUGINS': SEARCH_PLUGINS,
+                        'STATUS_LIMIT': STATUS_LIMIT,
+                        'STATUS_UPDATE_INTERVAL': STATUS_UPDATE_INTERVAL,
+                        'STOP_DUPLICATE': STOP_DUPLICATE,
+                        'STREAMWISH_API': STREAMWISH_API,
+                        'SUDO_USERS': SUDO_USERS,
+                        'STORAGE_THRESHOLD': STORAGE_THRESHOLD,
+                        'STOP_DUPLICATE_TASKS': STOP_DUPLICATE_TASKS,
+                        'SET_COMMANDS': SET_COMMANDS,
+                        'TELEGRAM_API': TELEGRAM_API,
+                        'TELEGRAM_HASH': TELEGRAM_HASH,
+                        'TORRENT_TIMEOUT': TORRENT_TIMEOUT,
+                        'TORRENT_LIMIT': TORRENT_LIMIT,
+                        'TOKEN_TIMEOUT': TOKEN_TIMEOUT,
+                        'UPSTREAM_BRANCH': UPSTREAM_BRANCH,
+                        'UPSTREAM_REPO': UPSTREAM_REPO,
+                        'USER_MAX_TASKS': USER_MAX_TASKS,
+                        'USER_DUMP': USER_DUMP,
+                        'USER_SESSION_STRING': USER_SESSION_STRING,
+                        'USE_SERVICE_ACCOUNTS': USE_SERVICE_ACCOUNTS,
+                        'WEB_PINCODE': WEB_PINCODE,
+                        'YTDLP_LIMIT': YTDLP_LIMIT,
+                        'PLAYLIST_LIMIT': PLAYLIST_LIMIT,
+                        'YT_DLP_OPTIONS': YT_DLP_OPTIONS})
 
     if DATABASE_URL:
-        await DbManger().update_config(config_dict)
-    await initiate_search_tools()
-    await start_from_queued()
-    await rclone_serve_booter()
+        await DbManager().update_config(config_dict)
+    await gather(initiate_search_tools(), start_from_queued(), rclone_serve_booter())
 
 
 async def get_buttons(key=None, edit_type=None):
@@ -608,7 +627,7 @@ async def update_buttons(message, key=None, edit_type=None):
     await editMessage(message, msg, button)
 
 
-async def edit_variable(client, message, pre_message, key):
+async def edit_variable(_, message, pre_message, key):
     handler_dict[message.chat.id] = False
     value = message.text
     if key == 'RSS_DELAY':
@@ -617,8 +636,9 @@ async def edit_variable(client, message, pre_message, key):
     elif key == 'DOWNLOAD_DIR':
         if not value.endswith('/'):
             value += '/'
-    elif key in ['DUMP_CHAT_ID', 'RSS_CHAT_ID', 'LOG_CHAT_ID']:
-        value = int(value)
+    elif key in ['DUMP_CHAT_ID', 'RSS_CHAT_ID', 'LOG_CHAT_ID', 'USER_DUMP']:
+        if value.isdigit() or value.startswith('-'):
+            value = int(value)
     elif key == 'STATUS_UPDATE_INTERVAL':
         value = int(value)
         if len(download_dict) != 0:
@@ -652,7 +672,7 @@ async def edit_variable(client, message, pre_message, key):
     elif key == 'EXTENSION_FILTER':
         fx = value.split()
         GLOBAL_EXTENSION_FILTER.clear()
-        GLOBAL_EXTENSION_FILTER.append('.aria2')
+        GLOBAL_EXTENSION_FILTER.extend(['aria2', '!qB'])
         for x in fx:
             if x.strip().startswith('.'):
                 x = x.lstrip('.')
@@ -668,7 +688,7 @@ async def edit_variable(client, message, pre_message, key):
                 "drive_id": GDRIVE_ID, "index_link": value}
             categories_dict['Root'] = {
                 "drive_id": GDRIVE_ID, "index_link": value}
-    elif key not in ['SEARCH_LIMIT', 'STATUS_LIMIT'] and key.endswith(('_THRESHOLD', '_LIMIT')):
+    elif key not in ['SEARCH_LIMIT', 'STATUS_LIMIT', 'PLAYLIST_LIMIT'] and key.endswith(('_THRESHOLD', '_LIMIT')):
         value = float(value)
     elif value.isdigit() and key != 'FSUB_IDS':
         value = int(value)
@@ -677,12 +697,12 @@ async def edit_variable(client, message, pre_message, key):
     elif value.lower() == 'false':
         value = False
         if key == 'INCOMPLETE_TASK_NOTIFIER' and DATABASE_URL:
-            await DbManger().trunc_table('tasks')
+            await DbManager().trunc_table('tasks')
     config_dict[key] = value
     await update_buttons(pre_message, 'var')
     await message.delete()
     if DATABASE_URL:
-        await DbManger().update_config({key: value})
+        await DbManager().update_config({key: value})
     if key in ['SEARCH_PLUGINS', 'SEARCH_API_LINK']:
         await initiate_search_tools()
     elif key in ['QUEUE_ALL', 'QUEUE_DOWNLOAD', 'QUEUE_UPLOAD']:
@@ -716,7 +736,7 @@ async def edit_aria(_, message, pre_message, key):
     await update_buttons(pre_message, 'aria')
     await message.delete()
     if DATABASE_URL:
-        await DbManger().update_aria2(key, value)
+        await DbManager().update_aria2(key, value)
 
 
 async def edit_qbit(_, message, pre_message, key):
@@ -735,7 +755,7 @@ async def edit_qbit(_, message, pre_message, key):
     await update_buttons(pre_message, 'qbit')
     await message.delete()
     if DATABASE_URL:
-        await DbManger().update_qbittorrent(key, value)
+        await DbManager().update_qbittorrent(key, value)
 
 
 async def update_private_file(_, message, pre_message):
@@ -747,10 +767,11 @@ async def update_private_file(_, message, pre_message):
         if fn == 'accounts':
             if await aiopath.exists('accounts'):
                 await aiormtree('accounts')
+            if await aiopath.exists('rclone_sa'):
                 await aiormtree('rclone_sa')
             config_dict['USE_SERVICE_ACCOUNTS'] = False
             if DATABASE_URL:
-                await DbManger().update_config({'USE_SERVICE_ACCOUNTS': False})
+                await DbManager().update_config({'USE_SERVICE_ACCOUNTS': False})
         elif file_name in ['.netrc', 'netrc']:
             await (await create_subprocess_exec("touch", ".netrc")).wait()
             await (await create_subprocess_exec("chmod", "600", ".netrc")).wait()
@@ -857,7 +878,7 @@ async def update_private_file(_, message, pre_message):
         await rclone_serve_booter()
     await update_buttons(pre_message)
     if DATABASE_URL and file_name != 'config.env':
-        await DbManger().update_private_file(file_name)
+        await DbManager().update_private_file(file_name)
     if await aiopath.exists('accounts.zip'):
         await remove('accounts.zip')
 
@@ -892,7 +913,7 @@ async def edit_bot_settings(client, query):
     elif data[1] == 'fetch':
         handler_dict[message.chat.id] = False
         await query.answer()
-        await DbManger().load_configs()
+        await DbManager().load_configs()
         await load_config()
         await editMessage(message, 'Fetch config from database success!')
     elif data[1] == 'back':
@@ -920,7 +941,7 @@ async def edit_bot_settings(client, query):
                             value, update_all_messages))
         elif data[2] == 'EXTENSION_FILTER':
             GLOBAL_EXTENSION_FILTER.clear()
-            GLOBAL_EXTENSION_FILTER.append('.aria2')
+            GLOBAL_EXTENSION_FILTER.extend(['aria2', '!qB'])
         elif data[2] == 'TORRENT_TIMEOUT':
             downloads = await sync_to_async(aria2.get_downloads)
             for download in downloads:
@@ -931,7 +952,7 @@ async def edit_bot_settings(client, query):
                         LOGGER.error(e)
             aria2_options['bt-stop-timeout'] = '0'
             if DATABASE_URL:
-                await DbManger().update_aria2('bt-stop-timeout', '0')
+                await DbManager().update_aria2('bt-stop-timeout', '0')
         elif data[2] == 'BASE_URL':
             await (await create_subprocess_exec("pkill", "-9", "-f", "gunicorn")).wait()
         elif data[2] == 'BASE_URL_PORT':
@@ -952,13 +973,13 @@ async def edit_bot_settings(client, query):
                 categories_dict['Root'] = {
                     "drive_id": GDRIVE_ID, "index_link": ''}
         elif data[2] == 'INCOMPLETE_TASK_NOTIFIER' and DATABASE_URL:
-            await DbManger().trunc_table('tasks')
+            await DbManager().trunc_table('tasks')
         elif data[2] == 'STOP_DUPLICATE_TASKS' and DATABASE_URL:
-            await DbManger().clear_download_links()
+            await DbManager().clear_download_links()
         config_dict[data[2]] = value
         await update_buttons(message, 'var')
         if DATABASE_URL:
-            await DbManger().update_config({data[2]: value})
+            await DbManager().update_config({data[2]: value})
         if data[2] in ['SEARCH_PLUGINS', 'SEARCH_API_LINK']:
             await initiate_search_tools()
         elif data[2] in ['QUEUE_ALL', 'QUEUE_DOWNLOAD', 'QUEUE_UPLOAD']:
@@ -983,7 +1004,7 @@ async def edit_bot_settings(client, query):
                 except Exception as e:
                     LOGGER.error(e)
         if DATABASE_URL:
-            await DbManger().update_aria2(data[2], value)
+            await DbManager().update_aria2(data[2], value)
     elif data[1] == 'emptyaria':
         handler_dict[message.chat.id] = False
         await query.answer()
@@ -997,7 +1018,7 @@ async def edit_bot_settings(client, query):
                 except Exception as e:
                     LOGGER.error(e)
         if DATABASE_URL:
-            await DbManger().update_aria2(data[2], '')
+            await DbManager().update_aria2(data[2], '')
     elif data[1] == 'emptyqbit':
         handler_dict[message.chat.id] = False
         await query.answer()
@@ -1005,7 +1026,7 @@ async def edit_bot_settings(client, query):
         qbit_options[data[2]] = ''
         await update_buttons(message, 'qbit')
         if DATABASE_URL:
-            await DbManger().update_qbittorrent(data[2], '')
+            await DbManager().update_qbittorrent(data[2], '')
     elif data[1] == 'private':
         handler_dict[message.chat.id] = False
         await query.answer()
@@ -1108,9 +1129,11 @@ async def edit_bot_settings(client, query):
 
 
 async def bot_settings(_, message):
+    handler_dict[message.chat.id] = False
     msg, button = await get_buttons()
     globals()['START'] = 0
     await sendMessage(message, msg, button)
+
 
 
 bot.add_handler(MessageHandler(bot_settings, filters=command(
