@@ -29,8 +29,8 @@ async def mirror_status(_, message):
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)
-        msg = '<b><u>@Server0x01 - ʙᴏᴛ ɪᴅʟᴇ</u></b>\n\n'
-        msg += '↺ ​🇳​​🇴​ ​🇦​​🇨​​🇹​​🇮​​🇻​​🇪​ ​🇹​​🇦​​🇸​​🇰​\n\n'
+        msg = '<b><u>@Server0x01 - BOT IDLE</u></b>\n\n'
+        msg += '<b>↺ NO ACTIVE TASK </b>\n\n'
         msg += f"<code>CPU    :</code> <b>{cpu_percent()}%</b>\n"\
                f"<code>FREE   :</code> <b>{free}</b>\n" \
                f"<code>RAM    :</code> <b>{virtual_memory().percent}%</b>\n" \
@@ -90,7 +90,7 @@ def bot_sys_stats():
             extr += 1
         elif status == MirrorStatus.STATUS_SEEDING:
             seed += 1
-    bmsg = f'_____ @Server0x01 ​🇧​​🇴​​🇹​ ​🇮​​🇳​​🇫​​🇴 ​_____\n\n'
+    bmsg = f'_____@Server0x01 BOT INFO____\n\n'
     bmsg += f'C: {cpup}% | R: {ramp}% | D: {disk}%\n\n'
     bmsg += f'T : {totl} | F : {free} | Q : {inqu}\n'
     bmsg += f'DL: {dwld} | UL: {upld} | SD: {seed}\n'
