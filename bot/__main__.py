@@ -131,8 +131,8 @@ async def send_repo_stats(_, query):
     update_info = ''
     s_id        = ''
     async with xclient() as client:
-        c_url = ''
-        v_url = ''
+        c_url = 'https://github.com/bishalqx980/Server0x01'
+        v_url = 'https://github.com/bishalqx980/Server0x01'
         res = await client.get(c_url)
         pns = await client.get(v_url)
         if res.status_code == 200 and pns.status_code == 200:
