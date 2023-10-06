@@ -57,33 +57,33 @@ async def stats(_, message, edit_mode=False):
     mem_p       = memory.percent
     swap        = swap_memory()
 
-    bot_stats = f'<b>@Server0x01 <u>SYSTEM STATISTICS</u></b>\n\n'\
-                f'<code>CPU             :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
-                f'<code>RAM             :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
-                f'<code>SWAP            :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
-                f'<code>DISK            :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n\n' \
-                f'<code>Bot Uptime      :</code> <b>{botTime}</b>\n' \
-                f'<code>BOT Restart     :</code> <b>{res_time}</b>\n\n' \
-                f'<code>Uploaded        :</code> <b>{sent}</b>\n' \
-                f'<code>Downloaded      :</code> <b>{recv}</b>\n' \
-                f'<code>Total Bandwidth :</code> <b>{tb}</b>'
+    bot_stats = f'<b>🔰 <u>SYSTEM STATISTICS</u></b>\n\n'\
+                f'<code>CPU  :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
+                f'<code>RAM  :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
+                f'<code>SWAP :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
+                f'<code>DISK :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n\n' \
+                f'<code>Bot Uptime  :</code> <b>{botTime}</b>\n' \
+                f'<code>BOT Restart :</code> <b>{res_time}</b>\n\n' \
+                f'<code>Uploaded    :</code> <b>{sent}</b>\n' \
+                f'<code>Downloaded  :</code> <b>{recv}</b>\n' \
+                f'<code>T-Bandwidth :</code> <b>{tb}</b>'
 
-    sys_stats = f'<b>@Server0x01 <u>SYSTEM STATISTICS</u></b>\n\n'\
-                f'<code>System Uptime    :</code> <b>{sysTime}</b>\n' \
-                f'<code>CPU              :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
-                f'<code>CPU Total Core(s):</code> <b>{cpu_count(logical=True)}</b>\n' \
-                f'<code>P-Core(s)        :</code> <b>{cpu_count(logical=False)}</b>\n' \
-                f'<code>V-Core(s)        :</code> <b>{v_core}</b>\n' \
-                f'<code>Frequency        :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
-                f'<code>RAM              :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
-                f'<code>Total            :</code> <b>{get_readable_file_size(memory.total)}</b>\n' \
-                f'<code>Free             :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
-                f'<code>SWAP             :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
-                f'<code>Total            :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
-                f'<code>Free             :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
-                f'<code>DISK             :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
-                f'<code>Total            :</code> <b>{total}</b>\n' \
-                f'<code>Free             :</code> <b>{free}</b>'
+    sys_stats = f'<b>🔰 <u>SYSTEM STATISTICS</u></b>\n\n'\
+                f'<code>Sys Uptime :</code> <b>{sysTime}</b>\n' \
+                f'<code>CPU        :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
+                f'<code>T-Core(s)  :</code> <b>{cpu_count(logical=True)}</b>\n' \
+                f'<code>P-Core(s)  :</code> <b>{cpu_count(logical=False)}</b>\n' \
+                f'<code>V-Core(s)  :</code> <b>{v_core}</b>\n' \
+                f'<code>Frequency  :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
+                f'<code>RAM   :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
+                f'<code>Total :</code> <b>{get_readable_file_size(memory.total)}</b>\n' \
+                f'<code>Free  :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
+                f'<code>SWAP  :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
+                f'<code>Total :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
+                f'<code>Free  :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
+                f'<code>DISK  :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
+                f'<code>Total :</code> <b>{total}</b>\n' \
+                f'<code>Free  :</code> <b>{free}</b>'
 
     buttons.ibutton("Sys Stats",  "show_sys_stats")
     buttons.ibutton("Repo Stats", "show_repo_stats")
@@ -131,6 +131,7 @@ async def send_repo_stats(_, query):
     update_info = ''
     s_id        = ''
     async with xclient() as client:
+        """
         c_url = 'https://github.com/bishalqx980/Server0x01'
         v_url = 'https://github.com/bishalqx980/Server0x01'
         res = await client.get(c_url)
@@ -150,6 +151,7 @@ async def send_repo_stats(_, query):
             if tags:
                 tags = next((tag for tag in tags if tag["commit"]["short_id"] == f"{s_id}"), None)
                 vtag = tags["name"]
+        """
         if await aiopath.exists('.git'):
             last_commit = (await cmd_exec("git log -1   --date=short --pretty=format:'%cr'", True))[0]
             version     = (await cmd_exec("git describe --abbrev=0   --tags",                True))[0]
@@ -161,17 +163,19 @@ async def send_repo_stats(_, query):
                 update_info =  f'⚠️ New Version Update Available ⚠️\n'
                 update_info += f'Update ASAP and experience new features and bug-fixes.'
         
-    repo_stats = f'<b>@Serverv0x01 <u>Repository Info</u></b> \n\n' \
+    repo_stats = f'<b>🔰 <u>Repository Info</u></b> \n\n' \
+    """
                  f'<b>Official Repository</b>        \n'   \
                  f'<code>- Updated   : </code> {commit_date}\n'   \
                  f'<code>- Version   : </code> {vtag}       \n'   \
                  f'<code>- Changelog : </code> {c_log}      \n'   \
                  f'<code>- Desc      : </code> {d_log}      \n'   \
                  f'<b>Bot Repository</b>             \n'   \
+    """
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
-                 f'<b>{update_info}</b>'
+                 f'<b>{update_info}\n\n@Server0x01</b>'
 
     buttons.ibutton("Bot Stats",  "show_bot_stats")
     buttons.ibutton("Sys Stats",  "show_sys_stats")
