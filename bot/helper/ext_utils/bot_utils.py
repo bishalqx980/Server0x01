@@ -199,7 +199,7 @@ def get_readable_message():
     msg += f"\n<code>UPTIME  :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n\n<b>@Server0x01</b>"
     if tasks <= STATUS_LIMIT:
         buttons = ButtonMaker()
-        buttons.ibutton("BOT INFO", "status stats")
+        buttons.ibutton("× ⚡ BOT INFO ⚡ ×", "status stats")
         button = buttons.build_menu(1)
     if tasks > STATUS_LIMIT:
         return get_pages(msg)
