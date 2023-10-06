@@ -116,8 +116,8 @@ def get_progress_bar_string(pct):
         pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
     cFull = int(p // 10)
-    p_str = '■' * cFull # ▓ ░
-    p_str += '□' * (10 - cFull)
+    p_str = '●' * cFull # ▓ ░
+    p_str += '◌' * (10 - cFull)
     return f"{p_str}"
 
 
@@ -171,7 +171,7 @@ def get_readable_message():
             msg += f"\n⌑ <code>Task   </code>» {download.extra_details['mode']}"
         else:
             msg += f"\n⌑ <code>Task   </code>» <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
-        msg += f"\n⌑ <code>User   </code>» {tag}"
+        msg += f"\n⌑ <code>User   </code>» {tag}\n\n⌑ Click on that 👇 to cancel your task !!"
         msg += f"\n⚠️ /{BotCommands.CancelMirror}_{download.gid()}\n\n"
     if len(msg) == 0:
         return None, None
@@ -192,11 +192,11 @@ def get_readable_message():
             dl_speed += speed_in_bytes_per_second
         elif tstatus == MirrorStatus.STATUS_UPLOADING or tstatus == MirrorStatus.STATUS_SEEDING:
             up_speed += speed_in_bytes_per_second
-    msg += "____________________________"
-    msg += f"\n<code>FREE: </code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}"
-    msg += f"<code> | DL: </code>{get_readable_file_size(dl_speed)}/s"
-    msg += f"\n<code>UPTM: </code>{get_readable_time(time() - botStartTime)}"
-    msg += f"<code> | UL: </code>{get_readable_file_size(up_speed)}/s"
+    msg += "▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+    msg += f"\n<code>FREE    :</code> <b>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</b>"
+    msg += f"\n<code>Download:</code> <b>{get_readable_file_size(dl_speed)}/s</b>"
+    msg += f"\n<code>Upload  :</code> <b>{get_readable_file_size(up_speed)}/s</b>"
+    msg += f"\n<code>UPTIME  :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n\n<b>@Server0x01</b>"
     if tasks <= STATUS_LIMIT:
         buttons = ButtonMaker()
         buttons.ibutton("BOT INFO", "status stats")
