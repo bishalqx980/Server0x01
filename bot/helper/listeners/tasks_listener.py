@@ -398,8 +398,8 @@ class MirrorLeechListener:
         LOGGER.info(f'Done Uploading {name}')
         lmsg = f'<b>{escape(name)}</b>'
         lmsg +=f'\n<b>cc</b>: {self.tag}'
-        gmsg = f'<b>Yo, {self.tag}!\nYour job is done.</b>\n\n'
-        msg =  f'<code>Size    :</code> {get_readable_file_size(size)}\n'
+        gmsg = f'<b>Yo, {self.tag}!\nYour job is done.</b>'
+        msg =  f'\n\n<code>Size    :</code> {get_readable_file_size(size)}\n'
         msg += f"<code>Elapsed :</code> {get_readable_time(time() - self.extra_details['startTime'])}\n"
         msg += f"<code>Upload  :</code> {self.extra_details['mode']}"
         _msg = '' if rclonePath == '' else f'\n\n<code>Path :</code> {rclonePath}'
@@ -463,7 +463,7 @@ class MirrorLeechListener:
                 await start_from_queued()
                 return
         else:
-            msg += f'\n<code>Type        :</code> {mime_type}'
+            msg += f'\n<code>Type   :</code> {mime_type}'
             if mime_type == "Folder":
                 msg += f'\n<code>Sub Folders :</code> {folders}'
                 msg += f'\n<code>Files       :</code> {files}'
