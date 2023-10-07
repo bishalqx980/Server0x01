@@ -202,7 +202,7 @@ async def isBot_canDm(message, dmMode, isLeech=False, button=None):
     except Exception as e:
         if button is None:
             button = ButtonMaker()
-        _msg = "You need to <b>Start</b> me in <b>DM</b>."
+        _msg = "<b>You need to Start me in DM</b>."
         button.ubutton("Start Me", f"https://t.me/{bot_name}?start=start", 'header')
         return _msg, button
     return 'BotStarted', button
