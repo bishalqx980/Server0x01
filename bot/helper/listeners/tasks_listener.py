@@ -463,7 +463,7 @@ class MirrorLeechListener:
                 await start_from_queued()
                 return
         else:
-            msg += f'\n<code>Type   :</code> {mime_type}'
+            msg += f'\n<code>Type    :</code> {mime_type}'
             if mime_type == "Folder":
                 msg += f'\n<code>Sub Folders :</code> {folders}'
                 msg += f'\n<code>Files       :</code> {files}'
