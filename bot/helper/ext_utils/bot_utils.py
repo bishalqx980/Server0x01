@@ -29,8 +29,8 @@ PAGES           = 1
 PAGE_NO         = 1
 
 class MirrorStatus:
-    STATUS_UPLOADING    = "Uploading"
-    STATUS_DOWNLOADING  = "Downloading"
+    STATUS_UPLOADING    = "Uploading 📤"
+    STATUS_DOWNLOADING  = "Downloading 📥"
     STATUS_CLONING      = "Cloning"
     STATUS_QUEUEDL      = "Queued Download"
     STATUS_QUEUEUP      = "Queued Upload"
@@ -102,11 +102,11 @@ def bt_selection_buttons(id_, isCanCncl=True):
 
 async def get_telegraph_list(telegraph_content):
     path = [(await telegraph.create_page(
-        title='Z Drive Search', content=content))["path"] for content in telegraph_content]
+        title='Server0x01 Search', content=content))["path"] for content in telegraph_content]
     if len(path) > 1:
         await telegraph.edit_telegraph(path, telegraph_content)
     buttons = ButtonMaker()
-    buttons.ubutton("🔎 VIEW", f"https://telegra.ph/{path[0]}", 'header')
+    buttons.ubutton("👀 VIEW", f"https://telegra.ph/{path[0]}", 'header')
     buttons = extra_btns(buttons)
     return buttons.build_menu(1)
 
@@ -116,8 +116,8 @@ def get_progress_bar_string(pct):
         pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
     cFull = int(p // 10)
-    p_str = '●' * cFull # ▓ ░
-    p_str += '◌' * (10 - cFull)
+    p_str = '▰' * cFull # ▓ ░
+    p_str += '▱' * (10 - cFull)
     return f"{p_str}"
 
 
@@ -146,8 +146,8 @@ def get_readable_message():
             msg += f"\n⌑ {get_progress_bar_string(download.progress())} » {download.progress()}"
             msg += f"\n⌑ <code>Done   </code>» {download.processed_bytes()} of {download.size()}"
             msg += f"\n⌑ <code>ETA    </code>» {download.eta()}"
-            msg += f"\n⌑ <code>Past   </code>» {get_readable_time(elapsed)}"
-            msg += f"\n⌑ <code>ENG    </code>» {download.engine}"
+            msg += f"\n⌑ <code>ETIM   </code>» {get_readable_time(elapsed)}"
+            msg += f"\n⌑ <code>Eng.   </code>» {download.engine}"
             if hasattr(download, 'playList'):
                 try:
                     if playlist:=download.playList():
@@ -196,7 +196,7 @@ def get_readable_message():
     msg += f"\n<code>FREE    :</code> <b>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</b>"
     msg += f"\n<code>Download:</code> <b>{get_readable_file_size(dl_speed)}/s</b>"
     msg += f"\n<code>Upload  :</code> <b>{get_readable_file_size(up_speed)}/s</b>"
-    msg += f"\n<code>UPTIME  :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n\n<b>@Server0x01</b>"
+    msg += f"\n<code>UPTIME  :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n<b>@Server0x01</b>"
     if tasks <= STATUS_LIMIT:
         buttons = ButtonMaker()
         buttons.ibutton("× ⚡ BOT INFO ⚡ ×", "status stats")
@@ -399,8 +399,8 @@ async def checking_access(user_id, button=None):
         if button is None:
             button = ButtonMaker()
         button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
-        tmsg = 'Your <b>Token</b> is expired. Get a new one.'
-        tmsg += f'\n<b>Token Validity</b>: {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
+        tmsg = '<b>Your Token is expired. Get a new one.</b>'
+        tmsg += f'\n<b>Token Validity:</b> {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
         return tmsg, button
     return None, button
 
