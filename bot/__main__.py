@@ -53,6 +53,11 @@ async def stats(_, message, edit_mode=False):
     tb          = get_readable_file_size(net_io_counters().bytes_sent + net_io_counters().bytes_recv)
     cpuUsage    = cpu_percent(interval=0.1)
     v_core      = cpu_count(logical=True) - cpu_count(logical=False)
+    freq_info   = cpu_freq(percpu=False)
+    if freq_info is not None:
+        frequency = freq_info.current / 1000
+    else:
+        frequency = '-_-'
     memory      = virtual_memory()
     mem_p       = memory.percent
     swap        = swap_memory()
@@ -67,7 +72,6 @@ async def stats(_, message, edit_mode=False):
                 f'<code>Uploaded    :</code> <b>{sent}</b>\n' \
                 f'<code>Downloaded  :</code> <b>{recv}</b>\n' \
                 f'<code>T-Bandwidth :</code> <b>{tb}</b>'
-
     sys_stats = f'<b>🔰 <u>SYSTEM STATISTICS</u></b>\n\n'\
                 f'<code>Sys Uptime :</code> <b>{sysTime}</b>\n' \
                 f'<code>CPU        :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
@@ -292,7 +296,8 @@ help_string = f'''
 
 <b>Cancel Tasks:</b>
 /{BotCommands.CancelMirror}: Cancel task by gid or reply.
-/{BotCommands.CancelAllCommand[0]} : Cancel all tasks which added by you /{BotCommands.CancelAllCommand[1]} to in bots.
+/{BotCommands.CancelAllCommand[0]} : Cancel all tasks which added by you.
+/{BotCommands.CancelAllCommand[1]} : Cancel your all tasks in all bots.
 
 <b>Torrent/Drive Search:</b>
 /{BotCommands.ListCommand} [query]: Search in Google Drive(s).
@@ -314,6 +319,10 @@ help_string = f'''
 /{BotCommands.StatsCommand[0]} or /{BotCommands.StatsCommand[1]}: Show server stats.
 /{BotCommands.PingCommand[0]} or /{BotCommands.PingCommand[1]}: Check how long it takes to Ping the Bot.
 
+<b>Database Management:</b>
+/{BotCommands.RmdbCommand}: To remove active tasks from database (Only Owner & Sudo).
+/{BotCommands.RmalltokensCommand}: To remove all access tokens from database (Only Owner & Sudo).
+
 <b>Maintainance:</b>
 /{BotCommands.RestartCommand[0]}: Restart and update the bot (Only Owner & Sudo).
 /{BotCommands.RestartCommand[1]}: Restart and update all bots (Only Owner & Sudo).
@@ -333,8 +342,8 @@ help_string = f'''
 
 @new_thread
 async def bot_help(_, message):
-    reply_message = await sendMessage(message, help_string)
-    await auto_delete_message(message, reply_message)
+    hmsg = await sendMessage(message, help_string)
+    await auto_delete_message(message, hmsg)
 
 
 async def restart_notification():

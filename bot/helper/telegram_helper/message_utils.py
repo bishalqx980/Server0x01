@@ -85,7 +85,7 @@ async def deleteMessage(message):
 
 
 async def auto_delete_message(cmd_message=None, bot_message=None):
-    if config_dict['AUTO_DELETE_MESSAGE_DURATION'] != -1:
+    if config_dict['DELETE_LINKS'] and int(config_dict['AUTO_DELETE_MESSAGE_DURATION']) > 0:
         await sleep(config_dict['AUTO_DELETE_MESSAGE_DURATION'])
         if cmd_message is not None:
             await deleteMessage(cmd_message)
@@ -101,6 +101,13 @@ async def delete_all_messages():
                 await deleteMessage(data[0])
             except Exception as e:
                 LOGGER.error(str(e))
+
+
+async def delete_links(message):
+    if config_dict['DELETE_LINKS']:
+        if reply_to := message.reply_to_message:
+            await deleteMessage(reply_to)
+        await deleteMessage(message)
 
 
 async def get_tg_link_content(link):
@@ -202,7 +209,7 @@ async def isBot_canDm(message, dmMode, isLeech=False, button=None):
     except Exception as e:
         if button is None:
             button = ButtonMaker()
-        _msg = "<b>You need to Start me in DM</b>."
+        _msg = "You need to <b>Start</b> me in <b>DM</b>."
         button.ubutton("Start Me", f"https://t.me/{bot_name}?start=start", 'header')
         return _msg, button
     return 'BotStarted', button
@@ -320,12 +327,6 @@ async def message_filter(message):
     if _msg:
         message.id = None
         return _msg
-
-async def delete_links(message):
-    if config_dict['DELETE_LINKS']:
-        if reply_to := message.reply_to_message:
-            await deleteMessage(reply_to)
-        await deleteMessage(message)
 
 
 async def anno_checker(message):

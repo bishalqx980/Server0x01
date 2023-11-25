@@ -29,8 +29,8 @@ PAGES           = 1
 PAGE_NO         = 1
 
 class MirrorStatus:
-    STATUS_UPLOADING    = "Uploading 📤"
-    STATUS_DOWNLOADING  = "Downloading 📥"
+    STATUS_UPLOADING    = "Uploading"
+    STATUS_DOWNLOADING  = "Downloading"
     STATUS_CLONING      = "Cloning"
     STATUS_QUEUEDL      = "Queued Download"
     STATUS_QUEUEUP      = "Queued Upload"
@@ -92,8 +92,7 @@ def bt_selection_buttons(id_, isCanCncl=True):
         buttons.ubutton("Select Files", f"{BASE_URL}/app/files/{id_}")
         buttons.ibutton("Pincode", f"btsel pin {gid} {pincode}")
     else:
-        buttons.ubutton(
-            "Select Files", f"{BASE_URL}/app/files/{id_}?pin_code={pincode}")
+        buttons.ubutton("Select Files", f"{BASE_URL}/app/files/{id_}?pin_code={pincode}")
     if isCanCncl:
         buttons.ibutton("Cancel", f"btsel rm {gid} {id_}")
     buttons.ibutton("Done Selecting", f"btsel done {gid} {id_}")
@@ -135,7 +134,7 @@ def get_readable_message():
         if reply_to := download.message.reply_to_message:
             tag = reply_to.from_user.mention
         elapsed = time() - download.extra_details['startTime']
-        if config_dict['DELETE_LINKS']:
+        if config_dict['DELETE_LINKS'] and int(config_dict['AUTO_DELETE_MESSAGE_DURATION']) > 0:
             msg += f"\n<b>File Name</b> » <i>{escape(f'{download.name()}')}</i>\n\n" if elapsed <= config_dict['AUTO_DELETE_MESSAGE_DURATION'] else ""
         else:
             msg += f"\n<b>File Name</b> » <i>{escape(f'{download.name()}')}</i>\n\n"
@@ -399,8 +398,8 @@ async def checking_access(user_id, button=None):
         if button is None:
             button = ButtonMaker()
         button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
-        tmsg = '<b>Your Token is expired. Get a new one.</b>'
-        tmsg += f'\n<b>Token Validity:</b> {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
+        tmsg = 'Your <b>Token</b> is expired. Get a new one.'
+        tmsg += f'\n<b>Token Validity</b>: {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
         return tmsg, button
     return None, button
 
