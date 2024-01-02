@@ -55,7 +55,7 @@ async def countNode(_, message):
             msg += f'\n<b>Files</b>: {files}'
         msg += f'\n<b>Elapsed</b>: {get_readable_time(elapsed)}'
         msg += f'\n\n<b>cc</b>: {tag}'
-        msg += f'\nThanks For Using <b>@Server0x01</b>'
+        msg += f'\nThanks For Using <b>@Z_Mirror</b>'
         
     else:
         msg = f'Send Gdrive link along with command or by replying to the link by command\n\n<b>cc</b>: {tag}'

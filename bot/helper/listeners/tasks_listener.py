@@ -385,19 +385,19 @@ class MirrorLeechListener:
         if self.isSuperGroup and config_dict['INCOMPLETE_TASK_NOTIFIER'] and DATABASE_URL:
             await DbManager().rm_complete_task(self.message.link)
         LOGGER.info(f'Done Uploading {name}')
-        lmsg = f'<b>{escape(name)}</b>'
-        lmsg +=f'\n<b>cc</b>: {self.tag}'
-        gmsg = f'<b>Yo, {self.tag}!\nYour job is done.</b>'
-        msg =  f'\n\n<code>Size    :</code> {get_readable_file_size(size)}\n'
-        msg += f"<code>Elapsed :</code> {get_readable_time(time() - self.extra_details['startTime'])}\n"
-        msg += f"<code>Upload  :</code> {self.extra_details['mode']}"
-        _msg = '' if rclonePath == '' else f'\n\n<code>Path :</code> {rclonePath}'
+        lmsg = f'<b><i>{escape(name)}</i></b>'
+        lmsg += f'\n<b>cc</b>: <i>{self.tag}</i>'
+        gmsg = f'Hey <b>{self.tag}</b>!\nYour job is done.'
+        msg = f'\n\n<code>Size            </code>: {get_readable_file_size(size)}'
+        msg += f"\n<code>Elapsed         </code>: {get_readable_time(time() - self.extra_details['startTime'])}"
+        msg += f"\n<code>Upload          </code>: {self.extra_details['mode']}"
+        _msg = '' if rclonePath == '' else f'\n\n<code>Path            </code>: {rclonePath}'
         msg_ = '\n\n<b><i>Link has been sent in your DM.</i></b>'
         buttons = ButtonMaker()
         if self.isLeech:
-            msg += f'\n<code>Total Files :</code> {folders}\n'
+            msg += f'\n<code>Total Files     </code>: {folders}\n'
             if mime_type != 0:
-                msg += f'<code>Corrupted Files :</code> {mime_type}\n'
+                msg += f'<code>Corrupted Files</code> : {mime_type}\n'
             msg_ = '\n<b><i>Files has been sent in your DM.</i></b>'
             if not self.dmMessage:
                 if not files:
@@ -452,15 +452,15 @@ class MirrorLeechListener:
                 await start_from_queued()
                 return
         else:
-            msg += f'\n<code>Type    :</code> {mime_type}'
+            msg += f'\n<code>Type            </code>: {mime_type}'
             if mime_type == "Folder":
-                msg += f'\n<code>Sub Folders :</code> {folders}'
-                msg += f'\n<code>Files       :</code> {files}'
+                msg += f'\n<code>Sub Folders     </code>: {folders}'
+                msg += f'\n<code>Files           </code>: {files}'
             if link or rclonePath and config_dict['RCLONE_SERVE_URL']:
                 buttons = ButtonMaker()
                 if link:
                     if link.startswith("https://drive.google.com/") and not config_dict['DISABLE_DRIVE_LINK']:
-                        buttons.ubutton("☁️ Drive Link", link)
+                        buttons.ubutton("♻️ Drive Link", link)
                     elif not link.startswith("https://drive.google.com/"):
                         buttons.ubutton("☁️ Cloud Link", link)
                 if rclonePath and (RCLONE_SERVE_URL := config_dict['RCLONE_SERVE_URL']):
@@ -469,7 +469,7 @@ class MirrorLeechListener:
                     share_url = f'{RCLONE_SERVE_URL}/{remote}/{url_path}'
                     if mime_type == "Folder":
                         share_url += '/'
-                    buttons.ubutton("📂 Rclone Link", share_url)
+                    buttons.ubutton("🔗 Rclone Link", share_url)
                 elif not rclonePath:
                     INDEX_URL = self.index_link if self.drive_id else config_dict['INDEX_URL']
                     if INDEX_URL:
@@ -477,12 +477,12 @@ class MirrorLeechListener:
                         share_url = f'{INDEX_URL}/{url_path}'
                         if mime_type == "Folder":
                             share_url += '/'
-                            buttons.ubutton("📂 Download", share_url)
+                            buttons.ubutton("📁 Direct Link", share_url)
                         else:
-                            buttons.ubutton("📂 Download", share_url)
+                            buttons.ubutton("🔗 Direct Link", share_url)
                             if mime_type.startswith(('image', 'video', 'audio')):
                                 share_urls = f'{INDEX_URL}/{url_path}?a=view'
-                                buttons.ubutton("👀 View Link", share_urls)
+                                buttons.ubutton("🌐 View Link", share_urls)
                 buttons = extra_btns(buttons)
                 if self.dmMessage:
                     await sendMessage(self.dmMessage, lmsg + msg + _msg, buttons.build_menu(2))
@@ -491,7 +491,7 @@ class MirrorLeechListener:
                     await sendMessage(self.message, lmsg + msg + _msg, buttons.build_menu(2))
                 if self.logMessage:
                     if link.startswith("https://drive.google.com/") and config_dict['DISABLE_DRIVE_LINK']:
-                        buttons.ubutton("☁️ Drive Link", link, 'header')
+                        buttons.ubutton("♻️ Drive Link", link, 'header')
                     await sendMessage(self.logMessage, lmsg + msg + _msg, buttons.build_menu(2))
             else:
                 if self.dmMessage:
@@ -538,9 +538,9 @@ class MirrorLeechListener:
                 self.sameDir['tasks'].remove(self.uid)
                 self.sameDir['total'] -= 1
         msg = f"Sorry {self.tag}!\nYour download has been stopped."
-        msg += f"\n\n<code>Reason  :</code> {escape(str(error))}"
-        msg += f"\n<code>Elapsed :</code> {get_readable_time(time() - self.extra_details['startTime'])}"
-        msg += f"\n<code>Upload  :</code> {self.extra_details['mode']}"
+        msg += f"\n\n<code>Reason  </code>: {escape(str(error))}"
+        msg += f"\n<code>Elapsed </code>: {get_readable_time(time() - self.extra_details['startTime'])}"
+        msg += f"\n<code>Upload  </code>: {self.extra_details['mode']}"
         tlmsg = await sendMessage(self.message, msg, button)
         if self.logMessage:
             await sendMessage(self.logMessage, msg, button)
@@ -582,8 +582,8 @@ class MirrorLeechListener:
             if self.uid in self.sameDir:
                 self.sameDir.remove(self.uid)
         msg = f"{self.tag} {escape(str(error))}"
-        msg += f"\n<code>Elapsed :</code> {get_readable_time(time() - self.extra_details['startTime'])}"
-        msg += f"\n<code>Upload  :</code> {self.extra_details['mode']}"
+        msg += f"\n<code>Elapsed </code>: {get_readable_time(time() - self.extra_details['startTime'])}"
+        msg += f"\n<code>Upload  </code>: {self.extra_details['mode']}"
         tlmsg = await sendMessage(self.message, msg)
         if self.logMessage:
             await sendMessage(self.logMessage, msg)

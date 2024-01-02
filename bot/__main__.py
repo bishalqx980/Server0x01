@@ -62,32 +62,32 @@ async def stats(_, message, edit_mode=False):
     mem_p       = memory.percent
     swap        = swap_memory()
 
-    bot_stats = f'<b>🔰 <u>BOT STATISTICS</u></b>\n\n'\
-                f'<code>CPU  :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
-                f'<code>RAM  :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
-                f'<code>SWAP :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
-                f'<code>DISK :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n\n' \
-                f'<code>Bot Uptime  :</code> <b>{botTime}</b>\n' \
-                f'<code>BOT Restart :</code> <b>{res_time}</b>\n\n' \
-                f'<code>Uploaded    :</code> <b>{sent}</b>\n' \
-                f'<code>Downloaded  :</code> <b>{recv}</b>\n' \
-                f'<code>T-Bandwidth :</code> <b>{tb}</b>'
-    sys_stats = f'<b>🔰 <u>SYSTEM STATISTICS</u></b>\n\n'\
-                f'<code>Sys Uptime :</code> <b>{sysTime}</b>\n' \
-                f'<code>CPU        :</code> <b>{get_progress_bar_string(cpuUsage)} {cpuUsage}%</b>\n' \
-                f'<code>T-Core(s)  :</code> <b>{cpu_count(logical=True)}</b>\n' \
-                f'<code>P-Core(s)  :</code> <b>{cpu_count(logical=False)}</b>\n' \
-                f'<code>V-Core(s)  :</code> <b>{v_core}</b>\n' \
-                f'<code>Frequency  :</code> <b>{cpu_freq(percpu=False).current / 1000:.2f} GHz</b>\n\n' \
-                f'<code>RAM   :</code> <b>{get_progress_bar_string(mem_p)} {mem_p}%</b>\n' \
-                f'<code>Total :</code> <b>{get_readable_file_size(memory.total)}</b>\n' \
-                f'<code>Free  :</code> <b>{get_readable_file_size(memory.available)}</b>\n\n' \
-                f'<code>SWAP  :</code> <b>{get_progress_bar_string(swap.percent)} {swap.percent}%</b>\n' \
-                f'<code>Total :</code> <b>{get_readable_file_size(swap.total)}</b>\n' \
-                f'<code>Free  :</code> <b>{get_readable_file_size(swap.free)}</b>\n\n' \
-                f'<code>DISK  :</code> <b>{get_progress_bar_string(disk)} {disk}%</b>\n' \
-                f'<code>Total :</code> <b>{total}</b>\n' \
-                f'<code>Free  :</code> <b>{free}</b>'
+    bot_stats = f'<b><i><u>Zee Bot Statistics</u></i></b>\n\n'\
+                f'<code>CPU  : {get_progress_bar_string(cpuUsage)}</code> {cpuUsage}%\n' \
+                f'<code>RAM  : {get_progress_bar_string(mem_p)}</code> {mem_p}%\n' \
+                f'<code>SWAP : {get_progress_bar_string(swap.percent)}</code> {swap.percent}%\n' \
+                f'<code>DISK : {get_progress_bar_string(disk)}</code> {disk}%\n\n' \
+                f'<code>Bot Uptime      : </code> {botTime}\n' \
+                f'<code>BOT Restart     : </code> {res_time}\n\n' \
+                f'<code>Uploaded        : </code> {sent}\n' \
+                f'<code>Downloaded      : </code> {recv}\n' \
+                f'<code>Total Bandwidth : </code> {tb}'
+
+    sys_stats = f'<b><i><u>Zee System Statistics</u></i></b>\n\n'\
+                f'<b>System Uptime:</b> <code>{sysTime}</code>\n' \
+                f'<b>CPU:</b> {get_progress_bar_string(cpuUsage)}<code> {cpuUsage}%</code>\n' \
+                f'<b>CPU Total Core(s):</b> <code>{cpu_count(logical=True)}</code>\n' \
+                f'<b>P-Core(s):</b> <code>{cpu_count(logical=False)}</code> | ' \
+                f'<b>V-Core(s):</b> <code>{v_core}</code>\n' \
+                f'<b>Frequency:</b> <code>{frequency} GHz</code>\n\n' \
+                f'<b>RAM:</b> {get_progress_bar_string(mem_p)}<code> {mem_p}%</code>\n' \
+                f'<b>Total:</b> <code>{get_readable_file_size(memory.total)}</code> | ' \
+                f'<b>Free:</b> <code>{get_readable_file_size(memory.available)}</code>\n\n' \
+                f'<b>SWAP:</b> {get_progress_bar_string(swap.percent)}<code> {swap.percent}%</code>\n' \
+                f'<b>Total</b> <code>{get_readable_file_size(swap.total)}</code> | ' \
+                f'<b>Free:</b> <code>{get_readable_file_size(swap.free)}</code>\n\n' \
+                f'<b>DISK:</b> {get_progress_bar_string(disk)}<code> {disk}%</code>\n' \
+                f'<b>Total:</b> <code>{total}</code> | <b>Free:</b> <code>{free}</code>'
 
     buttons.ibutton("Sys Stats",  "show_sys_stats")
     buttons.ibutton("Repo Stats", "show_repo_stats")
@@ -135,6 +135,25 @@ async def send_repo_stats(_, query):
     update_info = ''
     s_id        = ''
     async with xclient() as client:
+        c_url = 'https://gitlab.com/api/v4/projects/Dawn-India%2fZ-Mirror/repository/branches'
+        v_url = 'https://gitlab.com/api/v4/projects/Dawn-India%2FZ-Mirror/repository/tags'
+        res = await client.get(c_url)
+        pns = await client.get(v_url)
+        if res.status_code == 200 and pns.status_code == 200:
+            commits = res.json()
+            tags = pns.json()
+            if commits:
+                commits = next((commit for commit in commits if commit["name"] == "upstream"), None)
+                commit_date   = commits["commit"]["committed_date"]
+                commit_date   = dt.strptime(commit_date, '%Y-%m-%dT%H:%M:%S.%f%z')
+                commit_date   = commit_date.strftime('%d/%m/%Y at %I:%M %p')
+                logs          = commits["commit"]["message"].split('\n\n')
+                c_log         = logs[0]
+                d_log         = 'N/A' if len(logs) < 2 else logs[1]
+                s_id          = commits["commit"]["short_id"]
+            if tags:
+                tags = next((tag for tag in tags if tag["commit"]["short_id"] == f"{s_id}"), None)
+                vtag = 'N/A' if tags is None else tags["name"]
         if await aiopath.exists('.git'):
             last_commit = (await cmd_exec("git log -1   --date=short --pretty=format:'%cr'", True))[0]
             version     = (await cmd_exec("git describe --abbrev=0   --tags",                True))[0]
@@ -143,10 +162,15 @@ async def send_repo_stats(_, query):
                 version = 'N/A'
         if version != 'N/A':
             if version != vtag:
-                update_info =  f'⚠️ New Version Update Available ⚠️\n'
-                update_info += f'Update ASAP and experience new features and bug-fixes.'
-        
-    repo_stats = f'<b>🔰 <u>Repository Info</u></b> \n\n' \
+                update_info =  f'⚠️ New Version Update Available ⚠️'
+
+    repo_stats = f'<b><i><u>Zee Repository Info</u></i></b> \n\n' \
+                 f'<b><i>Official Repository</i></b>        \n'   \
+                 f'<code>- Updated   : </code> {commit_date}\n'   \
+                 f'<code>- Version   : </code> {vtag}       \n'   \
+                 f'<code>- Changelog : </code> {c_log}      \n'   \
+                 f'<code>- Desc      : </code> {d_log}      \n'   \
+                 f'<b><i>Bot Repository</i></b>             \n'   \
                  f'<code>- Updated   : </code> {last_commit}\n'   \
                  f'<code>- Version   : </code> {version}    \n'   \
                  f'<code>- Changelog : </code> {change_log} \n\n' \
@@ -173,16 +197,16 @@ async def send_bot_limits(_, query):
     UMT = 'Unlimited' if config_dict['USER_MAX_TASKS']  == '' else config_dict['USER_MAX_TASKS']
     BMT = 'Unlimited' if config_dict['QUEUE_ALL']       == '' else config_dict['QUEUE_ALL']
 
-    bot_limit = f'<b>🔰 <u>Bot Limitations</u></b>\n' \
-                f'<code>Torrent :</code> <b>{TOR} GB</b>\n' \
-                f'<code>G-Drive :</code> <b>{GDL} GB</b>\n' \
-                f'<code>Yt-Dlp  :</code> <b>{YTD} GB</b>\n' \
-                f'<code>Direct  :</code> <b>{DIR} GB</b>\n' \
-                f'<code>Clone   :</code> <b>{CLL} GB</b>\n' \
-                f'<code>Leech   :</code> <b>{TGL} GB</b>\n' \
-                f'<code>MEGA    :</code> <b>{MGA} GB</b>\n\n' \
-                f'<code>User-T  :</code> <b>{UMT}</b>\n' \
-                f'<code>Bot-T   :</code> <b>{BMT}</b>'
+    bot_limit = f'<b><i><u>Zee Bot Limitations</u></i></b>\n' \
+                f'<code>Torrent   : {TOR}</code> <b>GB</b>\n' \
+                f'<code>G-Drive   : {GDL}</code> <b>GB</b>\n' \
+                f'<code>Yt-Dlp    : {YTD}</code> <b>GB</b>\n' \
+                f'<code>Direct    : {DIR}</code> <b>GB</b>\n' \
+                f'<code>Clone     : {CLL}</code> <b>GB</b>\n' \
+                f'<code>Leech     : {TGL}</code> <b>GB</b>\n' \
+                f'<code>MEGA      : {MGA}</code> <b>GB</b>\n\n' \
+                f'<code>User Tasks: {UMT}</code>\n' \
+                f'<code>Bot Tasks : {BMT}</code>'
 
     buttons.ibutton("Bot Stats",  "show_bot_stats")
     buttons.ibutton("Sys Stats",  "show_sys_stats")
@@ -230,10 +254,10 @@ async def start(_, message):
     elif config_dict['DM_MODE'] and message.chat.type != message.chat.type.SUPERGROUP:
         start_string = 'Bot Started.\n' \
                        'Now I will send all of your stuffs here.\n' \
-                       'Use me at: @Server0x01'
+                       'Use me at: @Z_Mirror'
     elif not config_dict['DM_MODE'] and message.chat.type != message.chat.type.SUPERGROUP:
         start_string = 'Sorry, you cannot use me here!\n' \
-                       'Join: @Server0x01 Groups to use me.\n' \
+                       'Join: @Z_Mirror to use me.\n' \
                        'Thank You'
     else:
         tag = message.from_user.mention
@@ -257,16 +281,15 @@ async def restart(_, message):
         await f.write(f"{restart_message.chat.id}\n{restart_message.id}\n")
     osexecl(executable, executable, "-m", "bot")
 
-@new_thread
 async def ping(_, message):
     start_time = monotonic()
-    reply = await sendMessage(message, "Starting Ping")
+    reply = await sendMessage(message, "Pinging...")
     end_time = monotonic()
     ping_time = int((end_time - start_time) * 1000)
     await editMessage(reply, f'{ping_time} ms')
 
 async def log(_, message):
-    await sendFile(message, 'Logs.txt')
+    await sendFile(message, 'Z_Logs.txt')
 
 help_string = f'''
 <b>NOTE: Click on any CMD to see more detalis.</b>
@@ -406,7 +429,7 @@ async def main():
     bot.add_handler(CallbackQueryHandler(send_sys_stats,    filters=regex("^show_sys_stats")))
     bot.add_handler(CallbackQueryHandler(send_repo_stats,   filters=regex("^show_repo_stats")))
     bot.add_handler(CallbackQueryHandler(send_bot_limits,   filters=regex("^show_bot_limits")))
-    LOGGER.info("Congratulations, Bot Started Successfully!")
+    LOGGER.info("Bot Started Successfully!")
     signal(SIGINT, exit_clean_up)
 
 bot.loop.run_until_complete(main())

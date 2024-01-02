@@ -101,11 +101,11 @@ def bt_selection_buttons(id_, isCanCncl=True):
 
 async def get_telegraph_list(telegraph_content):
     path = [(await telegraph.create_page(
-        title='Server0x01 Search', content=content))["path"] for content in telegraph_content]
+        title='Z Drive Search', content=content))["path"] for content in telegraph_content]
     if len(path) > 1:
         await telegraph.edit_telegraph(path, telegraph_content)
     buttons = ButtonMaker()
-    buttons.ubutton("👀 VIEW", f"https://telegra.ph/{path[0]}", 'header')
+    buttons.ubutton("🔎 VIEW", f"https://graph.org/{path[0]}", 'header')
     buttons = extra_btns(buttons)
     return buttons.build_menu(1)
 
@@ -115,8 +115,8 @@ def get_progress_bar_string(pct):
         pct = float(pct.strip('%'))
     p = min(max(pct, 0), 100)
     cFull = int(p // 10)
-    p_str = '▰' * cFull # ▓ ░
-    p_str += '▱' * (10 - cFull)
+    p_str = '█' * cFull
+    p_str += '▒' * (10 - cFull)
     return f"{p_str}"
 
 
@@ -143,19 +143,19 @@ def get_readable_message():
                                      MirrorStatus.STATUS_QUEUEDL, MirrorStatus.STATUS_QUEUEUP]:
             msg += f" » {download.speed()}"
             msg += f"\n⌑ {get_progress_bar_string(download.progress())} » {download.progress()}"
-            msg += f"\n⌑ <code>Done   </code>» {download.processed_bytes()} of {download.size()}"
-            msg += f"\n⌑ <code>ETA    </code>» {download.eta()}"
-            msg += f"\n⌑ <code>ETIM   </code>» {get_readable_time(elapsed)}"
-            msg += f"\n⌑ <code>Eng.   </code>» {download.engine}"
+            msg += f"\n⌑ <code>Done   </code>: {download.processed_bytes()} of {download.size()}"
+            msg += f"\n⌑ <code>ETA    </code>: {download.eta()}"
+            msg += f"\n⌑ <code>Past   </code>: {get_readable_time(elapsed)}"
+            msg += f"\n⌑ <code>ENG    </code>: {download.engine}"
             if hasattr(download, 'playList'):
                 try:
                     if playlist:=download.playList():
-                        msg += f"\n⌑ <code>YtList </code>» {playlist}"
+                        msg += f"\n⌑ <code>YtList </code>: {playlist}"
                 except:
                     pass
             if hasattr(download, 'seeders_num'):
                 try:
-                    msg += f"\n⌑ <code>S/L    </code>» {download.seeders_num()}/{download.leechers_num()}"
+                    msg += f"\n⌑ <code>S/L    </code>: {download.seeders_num()}/{download.leechers_num()}"
                 except:
                     pass
         elif download.status() == MirrorStatus.STATUS_SEEDING:
@@ -165,12 +165,12 @@ def get_readable_message():
             msg += f"\n⌑ <code>Ratio    </code>» {download.ratio()}"
             msg += f"\n⌑ <code>Time     </code>» {download.seeding_time()}"
         else:
-            msg += f"\n⌑ <code>Size   </code>» {download.size()}"
+            msg += f"\n⌑ <code>Size   </code>: {download.size()}"
         if config_dict['DELETE_LINKS']:
-            msg += f"\n⌑ <code>Task   </code>» {download.extra_details['mode']}"
+            msg += f"\n⌑ <code>Task   </code>: {download.extra_details['mode']}"
         else:
-            msg += f"\n⌑ <code>Task   </code>» <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
-        msg += f"\n⌑ <code>User   </code>» {tag}\n\n⌑ Click on that 👇 to cancel your task !!"
+            msg += f"\n⌑ <code>Task   </code>: <a href='{download.message.link}'>{download.extra_details['mode']}</a>"
+        msg += f"\n⌑ <code>User   </code>: {tag}"
         msg += f"\n⚠️ /{BotCommands.CancelMirror}_{download.gid()}\n\n"
     if len(msg) == 0:
         return None, None
@@ -191,14 +191,14 @@ def get_readable_message():
             dl_speed += speed_in_bytes_per_second
         elif tstatus == MirrorStatus.STATUS_UPLOADING or tstatus == MirrorStatus.STATUS_SEEDING:
             up_speed += speed_in_bytes_per_second
-    msg += "▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-    msg += f"\n<code>FREE    :</code> <b>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}</b>"
-    msg += f"\n<code>Download:</code> <b>{get_readable_file_size(dl_speed)}/s</b>"
-    msg += f"\n<code>Upload  :</code> <b>{get_readable_file_size(up_speed)}/s</b>"
-    msg += f"\n<code>UPTIME  :</code> <b>{get_readable_time(time() - botStartTime)}</b>\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n<b>@Server0x01</b>"
+    msg += "____________________________"
+    msg += f"\n<code>FREE: </code>{get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)}"
+    msg += f"<code> | DL: </code>{get_readable_file_size(dl_speed)}/s"
+    msg += f"\n<code>UPTM: </code>{get_readable_time(time() - botStartTime)}"
+    msg += f"<code> | UL: </code>{get_readable_file_size(up_speed)}/s"
     if tasks <= STATUS_LIMIT:
         buttons = ButtonMaker()
-        buttons.ibutton("× ⚡ BOT INFO ⚡ ×", "status stats")
+        buttons.ibutton("BOT INFO", "status stats")
         button = buttons.build_menu(1)
     if tasks > STATUS_LIMIT:
         return get_pages(msg)
@@ -397,7 +397,7 @@ async def checking_access(user_id, button=None):
         user_data[user_id].update(data)
         if button is None:
             button = ButtonMaker()
-        button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
+        button.ubutton('Get New Token', short_url(f'https://telegram.me/{bot_name}?start={token}'))
         tmsg = 'Your <b>Token</b> is expired. Get a new one.'
         tmsg += f'\n<b>Token Validity</b>: {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
         return tmsg, button

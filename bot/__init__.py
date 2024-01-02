@@ -27,7 +27,7 @@ setdefaulttimeout(600)
 botStartTime = time()
 
 basicConfig(format='%(levelname)s | From %(name)s -> %(module)s line no: %(lineno)d | %(message)s',
-                    handlers=[FileHandler('Logs.txt'), StreamHandler()], level=INFO)
+                    handlers=[FileHandler('Z_Logs.txt'), StreamHandler()], level=INFO)
 
 LOGGER = getLogger(__name__)
 getLogger("apscheduler").setLevel(ERROR)
@@ -312,13 +312,13 @@ if len(BASE_URL) == 0:
 
 UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
 if len(UPSTREAM_REPO) == 0:
-    UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
+    UPSTREAM_REPO = 'https://gitlab.com/Dawn-India/Z-Mirror'
 
 UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
 if len(UPSTREAM_BRANCH) == 0:
     UPSTREAM_BRANCH = 'zh_run'
 
-RCLONE_SERVE_URL = environ.get('RCLONE_SERVE_URL', '').rstrip("/")
+RCLONE_SERVE_URL = environ.get('RCLONE_SERVE_URL', '')
 if len(RCLONE_SERVE_URL) == 0:
     RCLONE_SERVE_URL = ''
 
