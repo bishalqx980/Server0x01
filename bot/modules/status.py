@@ -29,10 +29,12 @@ async def mirror_status(_, message):
     if count == 0:
         currentTime = get_readable_time(time() - botStartTime)
         free = get_readable_file_size(disk_usage(config_dict['DOWNLOAD_DIR']).free)
-        msg = '<b>Uninstall Telegram and enjoy your life!</b>'
-        msg += '\n\nNo Active Tasks!\n___________________________'
-        msg += f"\n<b>CPU</b>: {cpu_percent()}% | <b>FREE</b>: {free}" \
-               f"\n<b>RAM</b>: {virtual_memory().percent}% | <b>UPTIME</b>: {currentTime}"
+        msg = '<b><u>@Server0x01 - BOT IDLE</u></b>\n\n'
+        msg += '<b>↺ NO ACTIVE TASK </b>\n\n'
+        msg += f"<code>CPU    :</code> <b>{cpu_percent()}%</b>\n"\
+               f"<code>FREE   :</code> <b>{free}</b>\n" \
+               f"<code>RAM    :</code> <b>{virtual_memory().percent}%</b>\n" \
+               f"<code>UPTIME :</code> <b>{currentTime}</b>"
         reply_message = await sendMessage(message, msg)
         await auto_delete_message(message, reply_message)
     else:
@@ -88,11 +90,11 @@ def bot_sys_stats():
             extr += 1
         elif status == MirrorStatus.STATUS_SEEDING:
             seed += 1
-    bmsg = f'______Zee Bot Info______\n\n'
-    bmsg += f'C: {cpup}% | R: {ramp}% | D: {disk}%\n\n'
-    bmsg += f'T : {totl} | F : {free} | Q : {inqu}\n'
-    bmsg += f'DL: {dwld} | UL: {upld} | SD: {seed}\n'
-    bmsg += f'ZP: {arch} | UZ: {extr} | SP: {splt}\n\n'
+    bmsg = f'⚡ @Server0x01 BOT INFO ⚡\n\n'
+    bmsg += f'CPU: {cpup}% | RAM: {ramp}% | DISK: {disk}%\n\n'
+    bmsg += f'Total: {totl} | Free: {free} | Queued: {inqu}\n'
+    bmsg += f'Download: {dwld} | Upload: {upld} | Seeding: {seed}\n'
+    bmsg += f'Zip: {arch} | Unzip: {extr} | Split: {splt}\n\n'
     bmsg += f'Bandwidth Used: {traf}'
     return bmsg
 

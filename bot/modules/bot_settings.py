@@ -42,9 +42,9 @@ default_values = {'AUTO_DELETE_MESSAGE_DURATION': 120,
                   'DOWNLOAD_DIR': '/usr/src/app/downloads/',
                   'LEECH_SPLIT_SIZE': MAX_SPLIT_SIZE,
                   'RSS_DELAY': 900,
-                  'STATUS_UPDATE_INTERVAL': 15,
+                  'STATUS_UPDATE_INTERVAL': 5,
                   'SEARCH_LIMIT': 0,
-                  'UPSTREAM_REPO': 'https://gitlab.com/Dawn-India/Z-Mirror',
+                  'UPSTREAM_REPO': 'https://github.com/bishalqx980/Server0x01',
                   'UPSTREAM_BRANCH': 'upstream',
                   'TORRENT_TIMEOUT': '600'}
 
@@ -300,11 +300,11 @@ async def load_config():
 
     UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
     if len(UPSTREAM_REPO) == 0:
-        UPSTREAM_REPO = 'https://gitlab.com/Dawn-India/Z-Mirror'
+        UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
 
     UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
     if len(UPSTREAM_BRANCH) == 0:
-        UPSTREAM_BRANCH = 'zh_run'
+        UPSTREAM_BRANCH = 'main'
 
     LOG_CHAT_ID = environ.get('LOG_CHAT_ID', '')
     if LOG_CHAT_ID.startswith('-100'):
