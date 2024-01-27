@@ -44,7 +44,7 @@ default_values = {'AUTO_DELETE_MESSAGE_DURATION': 120,
                   'RSS_DELAY': 900,
                   'STATUS_UPDATE_INTERVAL': 15,
                   'SEARCH_LIMIT': 0,
-                  'UPSTREAM_REPO': 'https://gitlab.com/Dawn-India/Z-Mirror',
+                  'UPSTREAM_REPO': 'https://github.com/bishalqx980/Server0x01',
                   'UPSTREAM_BRANCH': 'upstream',
                   'TORRENT_TIMEOUT': '600'}
 
@@ -300,7 +300,7 @@ async def load_config():
 
     UPSTREAM_REPO = environ.get('UPSTREAM_REPO', '')
     if len(UPSTREAM_REPO) == 0:
-        UPSTREAM_REPO = 'https://gitlab.com/Dawn-India/Z-Mirror'
+        UPSTREAM_REPO = 'https://github.com/bishalqx980/Server0x01'
 
     UPSTREAM_BRANCH = environ.get('UPSTREAM_BRANCH', '')
     if len(UPSTREAM_BRANCH) == 0:

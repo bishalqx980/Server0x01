@@ -101,11 +101,11 @@ def bt_selection_buttons(id_, isCanCncl=True):
 
 async def get_telegraph_list(telegraph_content):
     path = [(await telegraph.create_page(
-        title='Z Drive Search', content=content))["path"] for content in telegraph_content]
+        title='Server0x01 Drive Search', content=content))["path"] for content in telegraph_content]
     if len(path) > 1:
         await telegraph.edit_telegraph(path, telegraph_content)
     buttons = ButtonMaker()
-    buttons.ubutton("🔎 VIEW", f"https://graph.org/{path[0]}", 'header')
+    buttons.ubutton("👀 VIEW", f"https://telegra.ph/{path[0]}", 'header')
     buttons = extra_btns(buttons)
     return buttons.build_menu(1)
 
@@ -397,7 +397,7 @@ async def checking_access(user_id, button=None):
         user_data[user_id].update(data)
         if button is None:
             button = ButtonMaker()
-        button.ubutton('Get New Token', short_url(f'https://telegram.me/{bot_name}?start={token}'))
+        button.ubutton('Get New Token', short_url(f'https://t.me/{bot_name}?start={token}'))
         tmsg = 'Your <b>Token</b> is expired. Get a new one.'
         tmsg += f'\n<b>Token Validity</b>: {get_readable_time(config_dict["TOKEN_TIMEOUT"])}'
         return tmsg, button

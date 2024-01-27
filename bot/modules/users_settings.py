@@ -128,7 +128,7 @@ async def update_user_settings(query):
     user_id = query.from_user.id
     tpath = f"Thumbnails/{user_id}.jpg"
     if not ospath.exists(tpath):
-        tpath = "https://graph.org/file/25545597de34c640b31d6.jpg"
+        tpath = "https://raw.githubusercontent.com/bishalqx980/bishalqx980/main/other/img.jpg"
     await query.message.edit_media(
         media=InputMediaPhoto(media=tpath, caption=msg), reply_markup=button)
 
@@ -138,7 +138,7 @@ async def user_settings(_, message):
     user_id = message.from_user.id
     tpath = f"Thumbnails/{user_id}.jpg"
     if not ospath.exists(tpath):
-        tpath = "https://graph.org/file/25545597de34c640b31d6.jpg"
+        tpath = "https://raw.githubusercontent.com/bishalqx980/bishalqx980/main/other/img.jpg"
     usetMsg = await message.reply_photo(tpath, caption=msg, reply_markup=button)
     await auto_delete_message(message, usetMsg)
 
@@ -397,13 +397,13 @@ Timeout: 60 sec
         rmsg = f'''
 Send Leech Prefix. Timeout: 60 sec
 Examples:
-1. <code>{escape('<b>Join: @Z_Mirror</b>')}</code> 
+1. <code>{escape('<b>Join: @Server0x01</b>')}</code> 
 This will give output as:
-<b>Join: @Z_Mirror</b>  <code>69MB.bin</code>.
+<b>Join: @Server0x01</b>  <code>69MB.bin</code>.
 
-2. <code>{escape('<code>Join: @Z_Mirror</code>')}</code> 
+2. <code>{escape('<code>Join: @Server0x01</code>')}</code> 
 This will give output as:
-<code>Join: @Z_Mirror</code> <code>69MB.bin</code>.
+<code>Join: @Server0x01</code> <code>69MB.bin</code>.
 
 Check all available formatting options <a href="https://core.telegram.org/bots/api#formatting-options">HERE</a>.
         '''
