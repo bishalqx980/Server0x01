@@ -16,14 +16,17 @@ from bot.helper.ext_utils.bot_utils import (arg_parser, cmd_exec, get_readable_t
 from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
 from bot.helper.ext_utils.help_messages import CLONE_HELP_MESSAGE
 from bot.helper.ext_utils.task_manager import limit_checker
-from bot.helper.utils import none_admin_utils, stop_duplicate_tasks
+from bot.helper.z_utils import none_admin_utils, stop_duplicate_tasks
 from bot.helper.listeners.tasks_listener import MirrorLeechListener
 from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
 from bot.helper.mirror_utils.rclone_utils.list import RcloneList
 from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
 from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
 from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
-from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
+from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
+from bot.helper.mirror_utils.gdrive_utils.clone import gdClone
+from bot.helper.mirror_utils.gdrive_utils.count import gdCount
+from bot.helper.mirror_utils.gdrive_utils.search import gdSearch
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
 from bot.helper.telegram_helper.message_utils import (anno_checker,
@@ -165,8 +168,7 @@ async def gdcloneNode(message, link, listener):
     if is_gdrive_link(link):
         LOGGER.info(f'Cloning: {link}')
         start_time = time()
-        gd = GoogleDriveHelper()
-        name, mime_type, size, files, _ = await sync_to_async(gd.count, link)
+        name, mime_type, size, files, _ = await sync_to_async(gdCount().count, link)
         if mime_type is None:
             elapsed = time() - start_time
             LOGGER.error(f'Error in cloning: {name}')
@@ -178,8 +180,8 @@ async def gdcloneNode(message, link, listener):
             await auto_delete_message(message, cmsg)
             return
         if config_dict['STOP_DUPLICATE']:
-            LOGGER.info('Checking File/Folder if already in Drive...')
-            telegraph_content, contents_no = await sync_to_async(gd.drive_list, name, True)
+            LOGGER.info('Checking if File/Folder already in Drive...')
+            telegraph_content, contents_no = await sync_to_async(gdSearch(stopDup=True, noMulti=True).drive_list, name)
             if telegraph_content:
                 LOGGER.info('File/Folder is already available in Drive.')
                 msg = f"File/Folder is already available in Drive.\nHere are {contents_no} list results:"
@@ -194,10 +196,10 @@ async def gdcloneNode(message, link, listener):
             return
         await listener.onDownloadStart()
         LOGGER.info(f'Clone Started: Name: {name} - Source: {link}')
-        drive = GoogleDriveHelper(name, listener=listener)
+        drive = gdClone(name, listener=listener)
         if files <= 10:
             msg = await sendMessage(message, f"Cloning: <code>{link}</code>")
-            link, size, mime_type, files, folders = await sync_to_async(drive.clone, link, listener.drive_id)
+            link, size, mime_type, files, folders, dir_id = await sync_to_async(drive.clone, link, listener.drive_id)
             await deleteMessage(msg)
         else:
             gid = token_urlsafe(6)
@@ -205,12 +207,12 @@ async def gdcloneNode(message, link, listener):
             async with download_dict_lock:
                 download_dict[message.id] = GdriveStatus(drive, size, message, gid, 'cl', listener.extra_details)
             await sendStatusMessage(message)
-            link, size, mime_type, files, folders = await sync_to_async(drive.clone, link, listener.drive_id)
+            link, size, mime_type, files, folders, dir_id = await sync_to_async(drive.clone, link, listener.drive_id)
         if not link:
             await delete_links(message)
             return
         LOGGER.info(f'Cloning Done: {name}')
-        await listener.onUploadComplete(link, size, files, folders, mime_type, name)
+        await listener.onUploadComplete(link, size, files, folders, mime_type, name, dir_id=dir_id)
     else:
         cmsg = await sendMessage(message, CLONE_HELP_MESSAGE.format_map({'cmd': message.command[0]}))
         await auto_delete_message(message, cmsg)
