@@ -474,7 +474,7 @@ class MirrorLeechListener:
                 buttons = ButtonMaker()
                 if link:
                     if link.startswith("https://drive.google.com/") and not config_dict['DISABLE_DRIVE_LINK']:
-                        buttons.ubutton("♻️ Drive Link", link)
+                        buttons.ubutton("☁ Drive Link", link)
                     elif not link.startswith("https://drive.google.com/"):
                         buttons.ubutton("☁️ Cloud Link", link)
                 if rclonePath and (RCLONE_SERVE_URL := config_dict['RCLONE_SERVE_URL']):
@@ -489,12 +489,12 @@ class MirrorLeechListener:
                     if INDEX_URL:
                         share_url = f"{INDEX_URL}findpath?id={dir_id}"
                         if mime_type == "Folder":
-                            buttons.ubutton("📁 Direct Link", share_url)
+                            buttons.ubutton("⚡ Download", share_url)
                         else:
-                            buttons.ubutton("🔗 Direct Link", share_url)
+                            buttons.ubutton("⚡ Download", share_url)
                             if mime_type.startswith(("image", "video", "audio")):
                                 share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
-                                buttons.ubutton("🌐 View Link", share_urls)
+                                buttons.ubutton("👀 View Link", share_urls)
                 buttons = extra_btns(buttons)
                 if self.dmMessage:
                     await sendMessage(self.dmMessage, lmsg + msg + _msg, buttons.build_menu(2))
@@ -503,7 +503,7 @@ class MirrorLeechListener:
                     await sendMessage(self.message, lmsg + msg + _msg, buttons.build_menu(2))
                 if self.logMessage:
                     if link.startswith("https://drive.google.com/") and config_dict['DISABLE_DRIVE_LINK']:
-                        buttons.ubutton("♻️ Drive Link", link, 'header')
+                        buttons.ubutton("☁ Drive Link", link, 'header')
                     await sendMessage(self.logMessage, lmsg + msg + _msg, buttons.build_menu(2))
             else:
                 if self.dmMessage:
