@@ -321,5 +321,5 @@ async def BotPm_check(message, button=None):
         if button is None:
             button = ButtonMaker()
         _msg = "You haven't initiated the bot in a private message!"
-        button.ibutton("Start", f"@Server0x01 {user_id} pmc", 'header')
+        button.ibutton("Start", f"server0x01 {user_id} pmc", 'header')
         return _msg, button
