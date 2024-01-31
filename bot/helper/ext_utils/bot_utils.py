@@ -29,7 +29,7 @@ from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.button_build import ButtonMaker
 from bot.helper.ext_utils.telegraph_helper import telegraph
 from bot.helper.ext_utils.shorteners import short_url
-from bot.helper.ext_utils.aeon_utils import tinyfy
+from bot.helper.ext_utils.server0x01_utils import tinyfy
 
 THREADPOOL = ThreadPoolExecutor(max_workers = 1000)
 MAGNET_REGEX = r'magnet:\?xt=urn:(btih|btmh):[a-zA-Z0-9]*\s*'
@@ -157,7 +157,7 @@ def source(self):
 
 
 def get_readable_message():
-    msg = '<b>Powered by Aeon</b>\n\n'
+    msg = '<b>Powered by @Server0x01</b>\n\n'
     button = None
     tasks = len(download_dict)
     currentTime = get_readable_time(time() - botStartTime)

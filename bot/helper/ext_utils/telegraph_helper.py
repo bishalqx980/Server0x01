@@ -8,11 +8,11 @@ from bot import LOGGER, bot_loop, config_dict
 
 class TelegraphHelper:
     def __init__(self):
-        self.telegraph = Telegraph(domain='graph.org')
+        self.telegraph = Telegraph(domain='telegra.ph')
         self.short_name = token_hex(4)
         self.access_token = None
-        self.author_name = 'Aeon'
-        self.author_url = 'https://t.me/ProjectAeon'
+        self.author_name = 'Server0x01'
+        self.author_url = 'https://t.me/Server0x01'
 
     async def create_account(self):
         await self.telegraph.create_account(

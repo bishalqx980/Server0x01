@@ -138,17 +138,17 @@ async def take_ss(video_file, duration=None, total=1, gen_ss=False):
     tstamps = {}
     for eq_thumb in range(1, total+1):
         cmd[5] = str((duration // total) * eq_thumb)
-        tstamps[f"aeon_{eq_thumb}.jpg"] = strftime("%H:%M:%S", gmtime(float(cmd[5])))
-        cmd[-1] = ospath.join(des_dir, f"aeon_{eq_thumb}.jpg")
+        tstamps[f"server0x01_{eq_thumb}.jpg"] = strftime("%H:%M:%S", gmtime(float(cmd[5])))
+        cmd[-1] = ospath.join(des_dir, f"server0x01_{eq_thumb}.jpg")
         tasks.append(create_task(create_subprocess_exec(*cmd, stderr=PIPE)))
     status = await gather(*tasks)
     for task, eq_thumb in zip(status, range(1, total+1)):
-        if await task.wait() != 0 or not await aiopath.exists(ospath.join(des_dir, f"aeon_{eq_thumb}.jpg")):
+        if await task.wait() != 0 or not await aiopath.exists(ospath.join(des_dir, f"server0x01_{eq_thumb}.jpg")):
             err = (await task.stderr.read()).decode().strip()
             LOGGER.error(f'Error while extracting thumbnail no. {eq_thumb} from video. Name: {video_file} stderr: {err}')
             await aiormtree(des_dir)
             return None
-    return (des_dir, tstamps) if gen_ss else ospath.join(des_dir, "aeon_1.jpg")
+    return (des_dir, tstamps) if gen_ss else ospath.join(des_dir, "server0x01_1.jpg")
 
 
 async def split_file(path, size, file_, dirpath, split_size, listener, start_time=0, i=1, inLoop=False, multi_streams=True):
@@ -308,10 +308,10 @@ async def format_filename(file_, user_id, dirpath=None, isMirror=False):
 async def get_ss(up_path, ss_no):
     thumbs_path, tstamps = await take_ss(up_path, total=ss_no, gen_ss=True)
     th_html = f"<h4>{ospath.basename(up_path)}</h4><br><b>Total Screenshots:</b> {ss_no}<br><br>"
-    th_html += ''.join(f'<img src="https://graph.org{upload_file(ospath.join(thumbs_path, thumb))[0]}"><br><pre>Screenshot at {tstamps[thumb]}</pre>' for thumb in natsorted(await listdir(thumbs_path)))
+    th_html += ''.join(f'<img src="https://telegra.ph{upload_file(ospath.join(thumbs_path, thumb))[0]}"><br><pre>Screenshot at {tstamps[thumb]}</pre>' for thumb in natsorted(await listdir(thumbs_path)))
     await aiormtree(thumbs_path)
     link_id = (await telegraph.create_page(title="ScreenShots", content=th_html))["path"]
-    return f"https://graph.org/{link_id}"
+    return f"https://telegra.ph/{link_id}"
 
 
 async def get_mediainfo_link(up_path):
@@ -320,7 +320,7 @@ async def get_mediainfo_link(up_path):
     if len(stdout) != 0:
         tc += parseinfo(stdout)
     link_id = (await telegraph.create_page(title="MediaInfo", content=tc))["path"]
-    return f"https://graph.org/{link_id}"
+    return f"https://telegra.ph/{link_id}"
 
 
 def get_md5_hash(up_path):

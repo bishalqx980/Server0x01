@@ -79,7 +79,7 @@ async def stats(_, message):
 async def start(client, message):
     buttons = ButtonMaker()
     reply_markup = buttons.build_menu(2)
-    if len(message.command) > 1 and message.command[1] == "aeon":
+    if len(message.command) > 1 and message.command[1] == "Server0x01":
         await deleteMessage(message)
     elif len(message.command) > 1 and message.command[1] == "pmc":
         await sendMessage(message, 'Bot started')
@@ -142,7 +142,7 @@ async def ping(_, message):
 
 
 @new_task
-async def AeonCallback(_, query):
+async def Server0x01Callback(_, query):
     message = query.message
     user_id = query.from_user.id
     data = query.data.split()
@@ -167,7 +167,7 @@ async def AeonCallback(_, query):
             startLine = f"<b>Showing last {ind} lines from log.txt:</b> \n\n----------<b>START LOG</b>----------\n\n"
             endLine = "\n----------<b>END LOG</b>----------"
             btn = ButtonMaker()
-            btn.ibutton('Close', f'aeon {user_id} close')
+            btn.ibutton('Close', f'@Server0x01 {user_id} close')
             reply_message = await sendMessage(message, startLine + escape(Loglines) + endLine, btn.build_menu(1))
             await query.edit_message_reply_markup(None)
             await deleteMessage(message)
@@ -187,7 +187,7 @@ async def AeonCallback(_, query):
         else:
         	  LOGGER.error(f"Web paste failed : {str(err)}")
     elif data[2] == "botpm":
-        await query.answer(url=f"https://t.me/{bot_name}?start=aeon")
+        await query.answer(url=f"https://t.me/{bot_name}?start=Server0x01")
     elif data[2] == "pmc":
         await query.answer(url=f"https://t.me/{bot_name}?start=pmc")
     else:
@@ -197,8 +197,8 @@ async def AeonCallback(_, query):
 @new_task
 async def log(_, message):
     buttons = ButtonMaker()
-    buttons.ibutton('Log display', f'aeon {message.from_user.id} logdisplay')
-    buttons.ibutton('Web paste', f'aeon {message.from_user.id} webpaste')
+    buttons.ibutton('Log display', f'Server0x01 {message.from_user.id} logdisplay')
+    buttons.ibutton('Web paste', f'Server0x01 {message.from_user.id} webpaste')
     reply_message = await sendFile(message, 'log.txt', buttons=buttons.build_menu(1))
     await deleteMessage(message)
     await five_minute_del(reply_message)
@@ -254,7 +254,7 @@ async def main():
     bot.add_handler(MessageHandler(ping, filters=command(BotCommands.PingCommand) & CustomFilters.authorized))
     bot.add_handler(MessageHandler(bot_help, filters=command(BotCommands.HelpCommand) & CustomFilters.authorized))
     bot.add_handler(MessageHandler(stats, filters=command(BotCommands.StatsCommand) & CustomFilters.authorized))
-    bot.add_handler(CallbackQueryHandler(AeonCallback, filters=regex(r'^aeon')))
+    bot.add_handler(CallbackQueryHandler(Server0x01Callback, filters=regex(r'^server0x01')))
     LOGGER.info("Bot Started!")
     signal(SIGINT, exit_clean_up)
 

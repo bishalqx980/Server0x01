@@ -31,9 +31,9 @@ async def picture_add(_, message):
 
         try:
             photo_dir = await reply.download()
-            await editMessage(msg, "Now, uploading to <code>graph.org</code>, Please Wait...")
+            await editMessage(msg, "Now, uploading to <code>telegra.ph</code>, Please Wait...")
             await asleep(1)
-            graph_url = f'https://graph.org{upload_file(photo_dir)[0]}'
+            graph_url = f'https://telegra.ph{upload_file(photo_dir)[0]}'
             LOGGER.info(f"Telegraph link : {graph_url}")
         except Exception as e:
             LOGGER.error(f"Images Error: {str(e)}")

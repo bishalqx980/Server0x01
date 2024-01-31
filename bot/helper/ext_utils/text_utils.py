@@ -10,7 +10,7 @@ bset_display_dict = {
     'DIRECT_LIMIT': 'To limit the size of direct link download. the default unit is GB. Int',
     'YTDLP_LIMIT': 'To limit the size of ytdlp download. the default unit is GB. Int',
     'PLAYLIST_LIMIT': 'To limit Maximum Playlist Number. Int',
-    'IMAGES': 'Add multiple telgraph(graph.org) image links that are seperated by spaces.',
+    'IMAGES': 'Add multiple telgraph(telegra.ph) image links that are seperated by spaces.',
     'USER_MAX_TASKS': 'Limit the Maximum task for users of group at a time. use the Int',
     'GDRIVE_LIMIT': 'To limit the size of Google Drive folder/file link for leech, Zip, Unzip. the default unit is GB. Int',
     'USER_TASKS_LIMIT': 'The maximum limit on every users for all tasks. Int',
