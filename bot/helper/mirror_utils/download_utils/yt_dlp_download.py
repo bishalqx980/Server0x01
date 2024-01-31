@@ -1,16 +1,15 @@
-#!/usr/bin/env python3
 from os import path as ospath, listdir
-from secrets import token_urlsafe
+from secrets import token_hex
 from logging import getLogger
 from yt_dlp import YoutubeDL, DownloadError
 from re import search as re_search
 
 from bot import download_dict_lock, download_dict, non_queued_dl, queue_dict_lock
-from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
-from bot.helper.telegram_helper.message_utils import sendStatusMessage, delete_links, auto_delete_message
+from bot.helper.telegram_helper.message_utils import sendStatusMessage
 from ..status_utils.yt_dlp_download_status import YtDlpDownloadStatus
+from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
 from bot.helper.ext_utils.bot_utils import sync_to_async, async_to_sync
-from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker, list_checker
+from bot.helper.ext_utils.task_manager import is_queued, stop_duplicate_check, limit_checker
 
 LOGGER = getLogger(__name__)
 
@@ -20,10 +19,9 @@ class MyLogger:
         self.obj = obj
 
     def debug(self, msg):
-        # Hack to fix changing extension
         if not self.obj.is_playlist:
             if match := re_search(r'.Merger..Merging formats into..(.*?).$', msg) or \
-                        re_search(r'.ExtractAudio..Destination..(.*?)$', msg):
+                    re_search(r'.ExtractAudio..Destination..(.*?)$', msg):
                 LOGGER.info(msg)
                 newname = match.group(1)
                 newname = newname.rsplit("/", 1)[-1]
@@ -49,29 +47,29 @@ class YoutubeDLHelper:
         self.__eta = '-'
         self.__listener = listener
         self.__gid = ''
-        self.playlist_index = 0
-        self.playlist_count = 0
         self.__is_cancelled = False
         self.__downloading = False
         self.__ext = ''
         self.name = ''
         self.is_playlist = False
-        self.opts = {'progress_hooks': [self.__onDownloadProgress],
-                     'logger': MyLogger(self),
-                     'usenetrc': True,
-                     'cookiefile': 'cookies.txt',
-                     'allow_multiple_video_streams': True,
-                     'allow_multiple_audio_streams': True,
-                     'noprogress': True,
-                     'allow_playlist_files': True,
-                     'overwrites': True,
-                     'writethumbnail': True,
-                     'trim_file_name': 220,
-                     'ffmpeg_location': '/bin/render',
-                     'retry_sleep_functions': {'http': lambda n: 3,
-                                               'fragment': lambda n: 3,
-                                               'file_access': lambda n: 3,
-                                               'extractor': lambda n: 3}}
+        self.playlist_count = 0
+        self.opts = {
+            'progress_hooks': [self.__onDownloadProgress],
+            'logger': MyLogger(self),
+            'usenetrc': True,
+            'cookiefile': 'cookies.txt',
+            'allow_multiple_video_streams': True,
+            'allow_multiple_audio_streams': True,
+            'noprogress': True,
+            'allow_playlist_files': True,
+            'overwrites': True,
+            'writethumbnail': True,
+            'trim_file_name': 220,
+            'ffmpeg_location': '/bin/render',
+            'retry_sleep_functions': {'http': lambda n: 3,
+                                      'fragment': lambda n: 3,
+                                      'file_access': lambda n: 3,
+                                      'extractor': lambda n: 3}}
 
     @property
     def download_speed(self):
@@ -107,10 +105,6 @@ class YoutubeDLHelper:
                 chunk_size = downloadedBytes - self.__last_downloaded
                 self.__last_downloaded = downloadedBytes
                 self.__downloaded_bytes += chunk_size
-                try:
-                    self.playlist_index = d['info_dict']['playlist_index']
-                except:
-                    pass
             else:
                 if d.get('total_bytes'):
                     self.__size = d['total_bytes']
@@ -158,8 +152,8 @@ class YoutubeDLHelper:
                         self.__size += entry['filesize']
                     if not self.name:
                         outtmpl_ = '%(series,playlist_title,channel)s%(season_number& |)s%(season_number&S|)s%(season_number|)02d.%(ext)s'
-                        self.name, ext = ospath.splitext(ydl.prepare_filename(entry, outtmpl=outtmpl_))
-                        self.name = name
+                        self.name, ext = ospath.splitext(
+                            ydl.prepare_filename(entry, outtmpl=outtmpl_))
                         if not self.__ext:
                             self.__ext = ext
             else:
@@ -198,8 +192,7 @@ class YoutubeDLHelper:
             self.opts['ignoreerrors'] = True
             self.is_playlist = True
 
-        self.__gid = token_urlsafe(6)
-        self.__gid = self.__gid.replace('-', '')
+        self.__gid = token_hex(4)
 
         await self.__onDownloadStart()
 
@@ -232,7 +225,8 @@ class YoutubeDLHelper:
         base_name, ext = ospath.splitext(self.name)
         trim_name = self.name if self.is_playlist else base_name
         if len(trim_name.encode()) > 200:
-            self.name = self.name[:200] if self.is_playlist else f'{base_name[:200]}{ext}'
+            self.name = self.name[:
+                                  200] if self.is_playlist else f'{base_name[:200]}{ext}'
             base_name = ospath.splitext(self.name)[0]
 
         if self.is_playlist:
@@ -247,28 +241,22 @@ class YoutubeDLHelper:
 
         if qual.startswith('ba/b'):
             self.name = f'{base_name}{self.__ext}'
+
         if self.__listener.isLeech:
-            self.opts['postprocessors'].append({'format': 'jpg', 'key': 'FFmpegThumbnailsConvertor', 'when': 'before_dl'})
-        if self.__ext in ['.mp3', '.mkv', '.mka', '.ogg', '.opus', '.flac', '.m4a', '.mp4', '.mov']:
-            self.opts['postprocessors'].append({'already_have_thumbnail': self.__listener.isLeech, 'key': 'EmbedThumbnail'})
+            self.opts['postprocessors'].append(
+                {'format': 'jpg', 'key': 'FFmpegThumbnailsConvertor', 'when': 'before_dl'})
+        if self.__ext in ['.mp3', '.mkv', '.mka', '.ogg', '.opus', '.flac', '.m4a', '.mp4', '.mov', 'm4v']:
+            self.opts['postprocessors'].append(
+                {'already_have_thumbnail': self.__listener.isLeech, 'key': 'EmbedThumbnail'})
         elif not self.__listener.isLeech:
             self.opts['writethumbnail'] = False
 
         msg, button = await stop_duplicate_check(self.name, self.__listener)
         if msg:
-            ymsg = await self.__listener.onDownloadError(msg, button)
-            await delete_links(self.__listener.message)
-            await auto_delete_message(self.__listener.message, ymsg)
+            await self.__listener.onDownloadError(msg, button)
             return
-        if limit_exceeded := await limit_checker(self.__size, self.__listener, isYtdlp=True):
-            ymsg = await self.__listener.onDownloadError(limit_exceeded)
-            await delete_links(self.__listener.message)
-            await auto_delete_message(self.__listener.message, ymsg)
-            return
-        if list_exceeded := await list_checker(self.playlist_count, is_playlist=True):
-            ymsg = await self.__listener.onDownloadError(list_exceeded)
-            await delete_links(self.__listener.message)
-            await auto_delete_message(self.__listener.message, ymsg)
+        if limit_exceeded := await limit_checker(self.__size, self.__listener, isYtdlp=True, isPlayList=self.playlist_count):
+            await self.__listener.onDownloadError(limit_exceeded)
             return
         added_to_queue, event = await is_queued(self.__listener.uid)
         if added_to_queue:

@@ -1,28 +1,24 @@
-#!/usr/bin/env python3
+from feedparser import parse as feedparse
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
+from pyrogram.filters import command, regex, create
 from asyncio import Lock, sleep
 from datetime import datetime, timedelta
-from functools import partial
-from html import escape
-from io import BytesIO
-from re import split as re_split
 from time import time
-
+from functools import partial
 from aiohttp import ClientSession
 from apscheduler.triggers.interval import IntervalTrigger
-from feedparser import parse as feedparse
-from pyrogram.filters import command, create, regex
-from pyrogram.handlers import CallbackQueryHandler, MessageHandler
+from re import split as re_split
+from io import BytesIO
 
-from bot import DATABASE_URL, LOGGER, bot, config_dict, rss_dict, scheduler
-from bot.helper.ext_utils.bot_utils import new_thread
+from bot import scheduler, rss_dict, LOGGER, DATABASE_URL, config_dict, bot
+from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, sendRss, sendFile
+from bot.helper.telegram_helper.filters import CustomFilters
+from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.ext_utils.db_handler import DbManager
+from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.ext_utils.bot_utils import new_thread
 from bot.helper.ext_utils.exceptions import RssShutdownException
 from bot.helper.ext_utils.help_messages import RSS_HELP_MESSAGE
-from bot.helper.telegram_helper.bot_commands import BotCommands
-from bot.helper.telegram_helper.button_build import ButtonMaker
-from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.message_utils import (editMessage, sendFile,
-                                                      sendMessage, sendRss)
 
 rss_dict_lock = Lock()
 handler_dict = {}
@@ -31,21 +27,21 @@ handler_dict = {}
 async def rssMenu(event):
     user_id = event.from_user.id
     buttons = ButtonMaker()
-    buttons.ibutton("Subscribe",     f"rss sub         {user_id}")
-    buttons.ibutton("Subscriptions", f"rss list        {user_id} 0")
-    buttons.ibutton("Get Items",     f"rss get         {user_id}")
-    buttons.ibutton("Edit",          f"rss edit        {user_id}")
-    buttons.ibutton("Pause",         f"rss pause       {user_id}")
-    buttons.ibutton("Resume",        f"rss resume      {user_id}")
-    buttons.ibutton("Unsubscribe",   f"rss unsubscribe {user_id}")
+    buttons.ibutton("Subscribe", f"rss sub {user_id}")
+    buttons.ibutton("Subscriptions", f"rss list {user_id} 0")
+    buttons.ibutton("Get Items", f"rss get {user_id}")
+    buttons.ibutton("Edit", f"rss edit {user_id}")
+    buttons.ibutton("Pause", f"rss pause {user_id}")
+    buttons.ibutton("Resume", f"rss resume {user_id}")
+    buttons.ibutton("Unsubscribe", f"rss unsubscribe {user_id}")
     if await CustomFilters.sudo('', event):
-        buttons.ibutton("All Subscriptions", f"rss listall   {user_id} 0")
-        buttons.ibutton("Pause All",         f"rss allpause  {user_id}")
-        buttons.ibutton("Resume All",        f"rss allresume {user_id}")
-        buttons.ibutton("Unsubscribe All",   f"rss allunsub  {user_id}")
-        buttons.ibutton("Delete User",       f"rss deluser   {user_id}")
+        buttons.ibutton("All Subscriptions", f"rss listall {user_id} 0")
+        buttons.ibutton("Pause All", f"rss allpause {user_id}")
+        buttons.ibutton("Resume All", f"rss allresume {user_id}")
+        buttons.ibutton("Unsubscribe All", f"rss allunsub {user_id}")
+        buttons.ibutton("Delete User", f"rss deluser {user_id}")
         if scheduler.running:
-            buttons.ibutton("Shutdown Rss",  f"rss shutdown  {user_id}")
+            buttons.ibutton("Shutdown Rss", f"rss shutdown {user_id}")
         else:
             buttons.ibutton("Start Rss", f"rss start {user_id}")
     buttons.ibutton("Close", f"rss close {user_id}")
@@ -59,12 +55,12 @@ async def updateRssMenu(query):
     await editMessage(query.message, msg, button)
 
 
-async def getRssMenu(_, message):
+async def getRssMenu(client, message):
     msg, button = await rssMenu(message)
     await sendMessage(message, msg, button)
 
 
-async def rssSub(_, message, pre_event):
+async def rssSub(client, message, pre_event):
     user_id = message.from_user.id
     handler_dict[user_id] = False
     if username := message.from_user.username:
@@ -90,11 +86,14 @@ async def rssSub(_, message, pre_event):
         exf_lists = []
         if len(args) > 2:
             arg = item.split(' -c ', 1)
-            cmd = re_split(' -inf | -exf ', arg[1])[0].strip() if len(arg) > 1 else None
+            cmd = re_split(' -inf | -exf ',
+                           arg[1])[0].strip() if len(arg) > 1 else None
             arg = item.split(' -inf ', 1)
-            inf = re_split(' -c | -exf ', arg[1])[0].strip() if len(arg) > 1 else None
+            inf = re_split(
+                ' -c | -exf ', arg[1])[0].strip() if len(arg) > 1 else None
             arg = item.split(' -exf ', 1)
-            exf = re_split(' -c | -inf ', arg[1])[0].strip() if len(arg) > 1 else None
+            exf = re_split(
+                ' -c | -inf ', arg[1])[0].strip() if len(arg) > 1 else None
             if inf is not None:
                 filters_list = inf.split('|')
                 for x in filters_list:
@@ -132,7 +131,7 @@ async def rssSub(_, message, pre_event):
                                                 'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}
                 else:
                     rss_dict[user_id] = {title: {'link': feed_link, 'last_feed': last_link, 'last_title': last_title,
-                                                 'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}}
+                                                'inf': inf_lists, 'exf': exf_lists, 'paused': False, 'command': cmd, 'tag': tag}}
             LOGGER.info(
                 f"Rss Feed Added: id: {user_id} - title: {title} - link: {feed_link} - c: {cmd} - inf: {inf} - exf: {exf}")
         except (IndexError, AttributeError) as e:
@@ -145,12 +144,6 @@ async def rssSub(_, message, pre_event):
     if msg:
         await sendMessage(message, msg)
     await updateRssMenu(pre_event)
-    is_sudo = await CustomFilters.sudo(_, message)
-    if scheduler.state == 2:
-        scheduler.resume()
-    elif is_sudo and not scheduler.running:
-        addJob(config_dict['RSS_DELAY'])
-        scheduler.start()
 
 
 async def getUserId(title):
@@ -241,21 +234,20 @@ async def rssList(query, start, all_users=False):
     buttons.ibutton("Close", f"rss close {user_id}")
     if keysCount > 5:
         for x in range(0, keysCount, 5):
-            buttons.ibutton(f'{int(x/5)}', f"rss list {user_id} {x}", position='footer')
+            buttons.ibutton(
+                f'{int(x/5)}', f"rss list {user_id} {x}", position='footer')
     button = buttons.build_menu(2)
     if query.message.text.html == list_feed:
         return
     await editMessage(query.message, list_feed, button)
 
 
-async def rssGet(_, message, pre_event):
+async def rssGet(client, message, pre_event):
     user_id = message.from_user.id
     handler_dict[user_id] = False
     args = message.text.split()
     if len(args) < 2:
-        msg = f'{args}. Wrong Input format. You should add number of the items you want to get.'
-        msg += 'Read help message before adding new subcription!'
-        await sendMessage(message, msg)
+        await sendMessage(message, f'{args}. Wrong Input format. You should add number of the items you want to get. Read help message before adding new subcription!')
         await updateRssMenu(pre_event)
         return
     try:
@@ -275,13 +267,14 @@ async def rssGet(_, message, pre_event):
                         link = rss_d.entries[item_num]['links'][1]['href']
                     except IndexError:
                         link = rss_d.entries[item_num]['link']
-                    item_info += f"<b>Name: </b><code>{escape(rss_d.entries[item_num]['title'])}</code>\n"
+                    item_info += f"<b>Name: </b><code>{rss_d.entries[item_num]['title'].replace('>', '').replace('<', '')}</code>\n"
                     item_info += f"<b>Link: </b><code>{link}</code>\n\n"
-                if len(item_info.encode()) > 4000:
-                    with BytesIO(str.encode(item_info)) as ofile:
-                        ofile.name = 'rss.txt'
-                        await sendFile(msg, ofile)
-                    await editMessage(msg, f'<b>{count}</b> item(s) from {title} send in text file')
+                item_info_ecd = item_info.encode()
+                if len(item_info_ecd) > 4000:
+                    with BytesIO(item_info_ecd) as out_file:
+                        out_file.name = f"rssGet {title} items_no. {count}.txt"
+                        await sendFile(message, out_file)
+                    await msg.delete()
                 else:
                     await editMessage(msg, item_info)
             except IndexError as e:
@@ -296,7 +289,7 @@ async def rssGet(_, message, pre_event):
     await updateRssMenu(pre_event)
 
 
-async def rssEdit(_, message, pre_event):
+async def rssEdit(client, message, pre_event):
     user_id = message.from_user.id
     handler_dict[user_id] = False
     items = message.text.split('\n')
@@ -312,11 +305,14 @@ async def rssEdit(_, message, pre_event):
         inf_lists = []
         exf_lists = []
         arg = item.split(' -c ', 1)
-        cmd = re_split(' -inf | -exf ', arg[1])[0].strip() if len(arg) > 1 else None
+        cmd = re_split(' -inf | -exf ', arg[1]
+                       )[0].strip() if len(arg) > 1 else None
         arg = item.split(' -inf ', 1)
-        inf = re_split(' -c | -exf ', arg[1])[0].strip() if len(arg) > 1 else None
+        inf = re_split(' -c | -exf ', arg[1]
+                       )[0].strip() if len(arg) > 1 else None
         arg = item.split(' -exf ', 1)
-        exf = re_split(' -c | -inf ', arg[1])[0].strip() if len(arg) > 1 else None
+        exf = re_split(' -c | -inf ', arg[1]
+                       )[0].strip() if len(arg) > 1 else None
         async with rss_dict_lock:
             if cmd is not None:
                 if cmd.lower() == 'none':
@@ -341,7 +337,7 @@ async def rssEdit(_, message, pre_event):
     await updateRssMenu(pre_event)
 
 
-async def rssDelete(_, message, pre_event):
+async def rssDelete(client, message, pre_event):
     handler_dict[message.from_user.id] = False
     users = message.text.split()
     for user in users:
@@ -361,7 +357,8 @@ async def event_handler(client, query, pfunc):
     async def event_filter(_, __, event):
         user = event.from_user or event.sender_chat
         return bool(user.id == user_id and event.chat.id == query.message.chat.id and event.text)
-    handler = client.add_handler(MessageHandler(pfunc, create(event_filter)), group=-1)
+    handler = client.add_handler(MessageHandler(
+        pfunc, create(event_filter)), group=-1)
     while handler_dict[user_id]:
         await sleep(0.5)
         if time() - start_time > 60:
@@ -428,12 +425,13 @@ async def rssListener(client, query):
             if data[1] == 'pause':
                 buttons.ibutton("Pause AllMyFeeds", f"rss uallpause {user_id}")
             elif data[1] == 'resume':
-                buttons.ibutton("Resume AllMyFeeds", f"rss uallresume {user_id}")
+                buttons.ibutton("Resume AllMyFeeds",
+                                f"rss uallresume {user_id}")
             elif data[1] == 'unsubscribe':
                 buttons.ibutton("Unsub AllMyFeeds", f"rss uallunsub {user_id}")
             buttons.ibutton("Close", f"rss close {user_id}")
             button = buttons.build_menu(2)
-            await editMessage(message, f'Send one or more rss titles seperated by space to {data[1]}.\nTimeout: 60 sec.', button)
+            await editMessage(message, f'Send one or more rss titles separated by space to {data[1]}.\nTimeout: 60 sec.', button)
             pfunc = partial(rssUpdate, pre_event=query, state=data[1])
             await event_handler(client, query, pfunc)
     elif data[1] == 'edit':
@@ -446,7 +444,7 @@ async def rssListener(client, query):
             buttons.ibutton("Back", f"rss back {user_id}")
             buttons.ibutton("Close", f"rss close {user_id}")
             button = buttons.build_menu(2)
-            msg = '''Send one or more rss titles with new filters or command seperated by new line.
+            msg = '''Send one or more rss titles with new filters or command separated by new line.
 Examples:
 Title1 -c mirror -up remote:path/subdir -exf none -inf 1080 or 720 opt: up: remote:path/subdir
 Title2 -c none -inf none -opt none
@@ -556,6 +554,7 @@ Timeout: 60 sec. Argument -c for command and options
 
 async def rssMonitor():
     if not config_dict['RSS_CHAT_ID']:
+        LOGGER.warning('RSS_CHAT_ID not added! Shutting down rss scheduler...')
         scheduler.shutdown(wait=False)
         return
     if len(rss_dict) == 0:
@@ -619,9 +618,9 @@ async def rssMonitor():
                         if not feed_msg.startswith('/'):
                             feed_msg = f"/{feed_msg}"
                     else:
-                        feed_msg = f"<b>File Name: </b><code>{item_title.replace('>', '').replace('<', '')}</code>\n\n"
-                        feed_msg += f"<b>Link: </b><code>{url}</code>"
-                    feed_msg += f"\n\n<b>Added By: </b><code>{data['tag']}</code>\n<b>User ID: </b><code>{user}</code>"
+                        feed_msg = f"<b>Name: </b><code>{item_title.replace('>', '').replace('<', '')}</code>\n\n"
+                        feed_msg += f"<b><a href='{url}'>Link</a>: </b><code>{url}</code>"
+                    feed_msg += f"\n<b>Tag: </b><code>{data['tag']}</code> <code>{user}</code>"
                     await sendRss(feed_msg)
                     feed_count += 1
                 async with rss_dict_lock:
@@ -644,8 +643,7 @@ async def rssMonitor():
 
 
 def addJob(delay):
-    scheduler.add_job(rssMonitor, trigger=IntervalTrigger(seconds=delay), id='0', name='RSS', misfire_grace_time=15,
-                      max_instances=1, next_run_time=datetime.now()+timedelta(seconds=20), replace_existing=True)
+    scheduler.add_job(rssMonitor, trigger=IntervalTrigger(seconds=delay), id='0', name='RSS', misfire_grace_time=15, max_instances=1, next_run_time=datetime.now()+timedelta(seconds=20), replace_existing=True)
 
 
 addJob(config_dict['RSS_DELAY'])

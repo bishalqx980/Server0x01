@@ -1,75 +1,47 @@
-#!/usr/bin/env python3
-from logging import getLogger
-from tenacity import RetryError
+from pyrogram.handlers import MessageHandler
+from pyrogram.filters import command
 
-from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
+from bot import bot
+from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
+from bot.helper.telegram_helper.message_utils import deleteMessage, sendMessage, delete_links
+from bot.helper.telegram_helper.filters import CustomFilters
+from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.ext_utils.bot_utils import is_gdrive_link, sync_to_async, new_task, get_readable_file_size
 
-LOGGER = getLogger(__name__)
+@new_task
+async def countNode(_, message):
+    async def format_node_count(name, mime_type, size, files, folders, tag):
+        msg = f'{name}\n\n'
+        msg += f'<b>• Size: </b>{get_readable_file_size(size)}\n'
+        if mime_type == 'Folder':
+            msg += f'<b>• SubFolders: </b>{folders}\n'
+            msg += f'<b>• Files: </b>{files}\n'
+        msg += f'<b>• Counted by: </b>{tag}\n'
+        msg += f'<b>• User ID: </b><code>{message.from_user.id}</code>\n'
+        return msg
 
+    args = message.text.split()
+    if username := message.from_user.username:
+        tag = f"@{username}"
+    else:
+        tag = message.from_user.mention
 
-class gdCount(GoogleDriveHelper):
+    link = args[1] if len(args) > 1 else ''
+    if len(link) == 0 and (reply_to := message.reply_to_message):
+        link = reply_to.text.split(maxsplit=1)[0].strip()
 
-    def __init__(self):
-        super().__init__()
-
-    def count(self, link):
-        try:
-            file_id = self.getIdFromUrl(link)
-        except (KeyError, IndexError):
-            return "Google Drive ID could not be found in the provided link", None, None, None, None
-        LOGGER.info(f"File ID: {file_id}")
-        try:
-            return self.__proceed_count(file_id)
-        except Exception as err:
-            if isinstance(err, RetryError):
-                LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
-                err = err.last_attempt.exception()
-            err = str(err).replace('>', '').replace('<', '')
-            if "File not found" in err:
-                if not self.alt_auth:
-                    token_service = self.alt_authorize()
-                    if token_service is not None:
-                        LOGGER.error('File not found. Trying with token.pickle...')
-                        self.service = token_service
-                        return self.count(link)
-                msg = "File not found."
-            else:
-                msg = f"Error.\n{err}"
-        return msg, None, None, None, None
-
-    def __proceed_count(self, file_id):
-        meta = self.getFileMetadata(file_id)
-        name = meta['name']
-        LOGGER.info(f"Counting: {name}")
-        mime_type = meta.get('mimeType')
-        if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
-            self.__gDrive_directory(meta)
-            mime_type = 'Folder'
-        else:
-            if mime_type is None:
-                mime_type = 'File'
-            self.total_files += 1
-            self.__gDrive_file(meta)
-        return name, mime_type, self.total_bytes, self.total_files, self.total_folders
-
-    def __gDrive_file(self, filee):
-        size = int(filee.get('size', 0))
-        self.total_bytes += size
-
-    def __gDrive_directory(self, drive_folder):
-        files = self.getFilesByFolderId(drive_folder['id'])
-        if len(files) == 0:
+    if is_gdrive_link(link):
+        msg = await sendMessage(message, f'<b>Counting:</b> <code>{link}</code>')
+        gd = GoogleDriveHelper()
+        name, mime_type, size, files, folders = await sync_to_async(gd.count, link)
+        if mime_type is None:
+            await sendMessage(message, name)
+            await deleteMessage(msg)
             return
-        for filee in files:
-            if shortcut_details := filee.get('shortcutDetails'):
-                mime_type = shortcut_details['targetMimeType']
-                file_id = shortcut_details['targetId']
-                filee = self.getFileMetadata(file_id)
-            else:
-                mime_type = filee.get('mimeType')
-            if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
-                self.total_folders += 1
-                self.__gDrive_directory(filee)
-            else:
-                self.total_files += 1
-                self.__gDrive_file(filee)
+        msg = await format_node_count(name, mime_type, size, files, folders, tag)
+    else:
+        msg = 'Send a Google Drive link along with the command or reply to a link with the command.'
+    await sendMessage(message, msg)
+    await delete_links(message)
+
+bot.add_handler(MessageHandler(countNode, filters=command(BotCommands.CountCommand) & CustomFilters.authorized))

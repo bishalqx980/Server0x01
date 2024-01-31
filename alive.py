@@ -1,22 +1,22 @@
-from time import sleep
-from requests import get as zget
-from os import environ
-from logging import error as logerror
+import os
+import time
+import logging
+import requests
 
-BASE_URL = environ.get('BASE_URL', None)
+BASE_URL = os.environ.get('BASE_URL', None)
 try:
     if len(BASE_URL) == 0:
         raise TypeError
     BASE_URL = BASE_URL.rstrip("/")
 except TypeError:
     BASE_URL = None
-PORT = environ.get('PORT', None)
+PORT = os.environ.get('PORT', None)
 if PORT is not None and BASE_URL is not None:
     while True:
         try:
-            zget(BASE_URL).status_code
-            sleep(600)
+            requests.get(BASE_URL).status_code
+            time.sleep(400)
         except Exception as e:
-            logerror(f"alive.py: {e}")
-            sleep(2)
+            logging.error(f"alive.py: {e}")
+            time.sleep(2)
             continue

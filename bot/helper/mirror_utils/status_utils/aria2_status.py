@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
 from time import time
 
-from bot import LOGGER, aria2
-from bot.helper.ext_utils.bot_utils import (MirrorStatus, get_readable_time,
-                                            sync_to_async)
+from bot import aria2, LOGGER
+from bot.helper.ext_utils.bot_utils import MirrorStatus, get_readable_time, sync_to_async
 
 
 def get_download(gid):
@@ -11,8 +9,8 @@ def get_download(gid):
         return aria2.get_download(gid)
     except Exception as e:
         LOGGER.error(f'{e}: Aria2c, Error while getting torrent info')
+        return None
 
-engine_ = f"Aria2 v{aria2.client.get_version()['version']}"
 
 class Aria2Status:
 
@@ -23,9 +21,7 @@ class Aria2Status:
         self.queued = queued
         self.start_time = 0
         self.seeding = seeding
-        self.message = listener.message
-        self.extra_details = self.__listener.extra_details
-        self.engine = engine_
+        self.message = self.__listener.message
 
     def __update(self):
         if self.__download is None:
@@ -52,7 +48,7 @@ class Aria2Status:
         return self.__download.total_length_string()
 
     def eta(self):
-        return self.__download.eta_string()
+        return get_readable_time(int(self.__download.eta.total_seconds()))
 
     def status(self):
         self.__update()
@@ -85,7 +81,7 @@ class Aria2Status:
         return f"{round(self.__download.upload_length / self.__download.completed_length, 3)}"
 
     def seeding_time(self):
-        return get_readable_time(time() - self.start_time)
+        return get_readable_time(time() - self.start_time, True)
 
     def download(self):
         return self

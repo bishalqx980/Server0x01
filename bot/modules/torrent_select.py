@@ -1,67 +1,45 @@
-#!/usr/bin/env python3
-from aiofiles.os import path as aiopath
-from aiofiles.os import remove as aioremove
+from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command, regex
-from pyrogram.handlers import CallbackQueryHandler, MessageHandler
+from aiofiles.os import remove as aioremove, path as aiopath
 
-from bot import LOGGER, aria2, bot, download_dict, download_dict_lock
-from bot.helper.ext_utils.help_messages import TOR_SEL_HELP_MESSAGE
-from bot.helper.ext_utils.bot_utils import (MirrorStatus, bt_selection_buttons,
-                                            getDownloadByGid, sync_to_async)
+from bot import bot, aria2, download_dict, download_dict_lock, OWNER_ID, user_data, LOGGER
 from bot.helper.telegram_helper.bot_commands import BotCommands
 from bot.helper.telegram_helper.filters import CustomFilters
-from bot.helper.telegram_helper.message_utils import (anno_checker, isAdmin,
-                                                      request_limiter, deleteMessage,
-                                                      auto_delete_message, delete_links,
-                                                      sendMessage,
-                                                      sendStatusMessage)
+from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage
+from bot.helper.ext_utils.bot_utils import getDownloadByGid, MirrorStatus, bt_selection_buttons, sync_to_async
 
 
 async def select(client, message):
-    if not message.from_user:
-        message.from_user = await anno_checker(message)
-    if not message.from_user:
-        return
     user_id = message.from_user.id
-    if not await isAdmin(message, user_id) and await request_limiter(message):
-        return
     msg = message.text.split()
     if len(msg) > 1:
         gid = msg[1]
         dl = await getDownloadByGid(gid)
         if dl is None:
-            tsmsg = await sendMessage(message, f"GID: <code>{gid}</code> Not Found.")
-            await delete_links(message)
-            await auto_delete_message(message, tsmsg)
+            await sendMessage(message, f"GID: <code>{gid}</code> Not Found.")
             return
     elif reply_to_id := message.reply_to_message_id:
         async with download_dict_lock:
             dl = download_dict.get(reply_to_id, None)
         if dl is None:
-            tsmsg = await sendMessage(message, "This is not an active task!")
-            await delete_links(message)
-            await auto_delete_message(message, tsmsg)
+            await sendMessage(message, "This is not an active task!")
             return
     elif len(msg) == 1:
-        tsmsg = await sendMessage(message, TOR_SEL_HELP_MESSAGE.format_map({'cmd': BotCommands.BtSelectCommand, 'mir': BotCommands.MirrorCommand[0]}))
-        await delete_links(message)
-        await auto_delete_message(message, tsmsg)
+        msg = ("Reply to an active /cmd which was used to start the qb-download or add gid along with cmd\n\n"
+               + "This command mainly for selection incase you decided to select files from already added torrent. "
+               + "But you can always use /cmd with arg `s` to select files before download start.")
+        await sendMessage(message, msg)
         return
 
-    if not await CustomFilters.sudo(client, message) and dl.message.from_user.id != user_id:
-        tsmsg = await sendMessage(message, "This task is not for you!")
-        await delete_links(message)
-        await auto_delete_message(message, tsmsg)
+    if OWNER_ID != user_id and dl.message.from_user.id != user_id and \
+       (user_id not in user_data or not user_data[user_id].get('is_sudo')):
+        await sendMessage(message, "This task is not for you!")
         return
     if dl.status() not in [MirrorStatus.STATUS_DOWNLOADING, MirrorStatus.STATUS_PAUSED, MirrorStatus.STATUS_QUEUEDL]:
-        tsmsg = await sendMessage(message, 'Task should be in download or pause (incase message deleted by wrong) or queued (status incase you used torrent file)!')
-        await delete_links(message)
-        await auto_delete_message(message, tsmsg)
+        await sendMessage(message, 'Task should be in download or pause (incase message deleted by wrong) or queued (status incase you used torrent file)!')
         return
     if dl.name().startswith('[METADATA]'):
-        tsmsg = await sendMessage(message, 'Try after downloading metadata finished!')
-        await delete_links(message)
-        await auto_delete_message(message, tsmsg)
+        await sendMessage(message, 'Try after downloading metadata finished!')
         return
 
     try:
@@ -77,18 +55,15 @@ async def select(client, message):
                 try:
                     await sync_to_async(aria2.client.force_pause, id_)
                 except Exception as e:
-                    LOGGER.error(f"{e} Error in pause, this mostly happens after abuse aria2")
+                    LOGGER.error(
+                        f"{e} Error in pause, this mostly happens after abuse aria2")
         listener.select = True
     except:
-        tsmsg = await sendMessage(message, "This is not a bittorrent task!")
-        await delete_links(message)
-        await auto_delete_message(message, tsmsg)
+        await sendMessage(message, "This is not a bittorrent task!")
         return
 
-    SBUTTONS = bt_selection_buttons(id_, False)
-    msg = f"<b>Name</b>: <code>{dl.name()}</code>"
-    msg += f"\n\nYour download paused. Choose files then press Done Selecting "
-    msg += f"button to resume downloading.\n<b><i>Your download will not start automatically</i></b>"
+    SBUTTONS = bt_selection_buttons(id_)
+    msg = "Your download paused. Choose files then press Done Selecting button to resume downloading."
     await sendMessage(message, msg, SBUTTONS)
 
 
@@ -99,14 +74,14 @@ async def get_confirm(client, query):
     dl = await getDownloadByGid(data[2])
     if dl is None:
         await query.answer("This task has been cancelled!", show_alert=True)
-        await deleteMessage(message)
+        await message.delete()
         return
     if hasattr(dl, 'listener'):
         listener = dl.listener()
     else:
         await query.answer("Not in download state anymore! Keep this message to resume the seed if seed enabled!", show_alert=True)
         return
-    if user_id != listener.message.from_user.id and not await CustomFilters.sudo(client, query):
+    if user_id != listener.message.from_user.id and not await CustomFilters.sudo_user(client, query):
         await query.answer("This task is not for you!", show_alert=True)
     elif data[1] == "pin":
         await query.answer(data[3], show_alert=True)
@@ -143,13 +118,13 @@ async def get_confirm(client, query):
                 except Exception as e:
                     LOGGER.error(f"{e} Error in resume, this mostly happens after abuse aria2. Try to use select cmd again!")
         await sendStatusMessage(message)
-        await deleteMessage(message)
+        await message.delete()
     elif data[1] == "rm":
         await query.answer()
-        obj = dl.download()
-        await obj.cancel_download()
-        await deleteMessage(message)
+        await (dl.download()).cancel_download()
+        await message.delete()
 
 
-bot.add_handler(MessageHandler(select, filters=command(BotCommands.BtSelectCommand) & CustomFilters.authorized))
+bot.add_handler(MessageHandler(select, filters=command(
+    BotCommands.BtSelectCommand) & CustomFilters.authorized))
 bot.add_handler(CallbackQueryHandler(get_confirm, filters=regex("^btsel")))

@@ -1,120 +1,264 @@
-#!/usr/bin/env python3
-from time import sleep
-from logging import getLogger
-from time import time
-from os import path as ospath
-from googleapiclient.errors import HttpError
-from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type, RetryError
+from pyrogram.handlers import MessageHandler
+from pyrogram.filters import command
+from secrets import token_hex
+from asyncio import sleep, gather
+from aiofiles.os import path as aiopath
+from json import loads
 
-from bot import config_dict, GLOBAL_EXTENSION_FILTER
-from bot.helper.ext_utils.bot_utils import async_to_sync
-from bot.helper.mirror_utils.gdrive_utils.helper import GoogleDriveHelper
+from bot import LOGGER, download_dict, download_dict_lock, config_dict, bot
+from bot.helper.ext_utils.task_manager import limit_checker, task_utils
+from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
+from bot.helper.telegram_helper.message_utils import sendMessage, editMessage, deleteMessage, sendStatusMessage, delete_links, one_minute_del, five_minute_del, isAdmin
+from bot.helper.telegram_helper.filters import CustomFilters
+from bot.helper.telegram_helper.bot_commands import BotCommands
+from bot.helper.telegram_helper.button_build import ButtonMaker
+from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
+from bot.helper.ext_utils.bot_utils import is_gdrive_link, new_task, get_readable_file_size, sync_to_async, fetch_user_tds, is_share_link, new_task, is_rclone_path, cmd_exec, get_telegraph_list, arg_parser
+from bot.helper.ext_utils.exceptions import DirectDownloadLinkException
+from bot.helper.mirror_utils.download_utils.direct_link_generator import direct_link_generator
+from bot.helper.mirror_utils.rclone_utils.list import RcloneList
+from bot.helper.mirror_utils.rclone_utils.transfer import RcloneTransferHelper
+from bot.helper.ext_utils.help_messages import CLONE_HELP_MESSAGE
+from bot.helper.mirror_utils.status_utils.rclone_status import RcloneStatus
+from bot.helper.listeners.tasks_listener import MirrorLeechListener
+from bot.helper.ext_utils.aeon_utils import nsfw_precheck
 
-LOGGER = getLogger(__name__)
+
+async def rcloneNode(client, message, link, dst_path, rcf, tag):
+    if link == 'rcl':
+        link = await RcloneList(client, message).get_rclone_path('rcd')
+        if not is_rclone_path(link):
+            await sendMessage(message, link)
+            return
+
+    if link.startswith('mrcc:'):
+        link = link.split('mrcc:', 1)[1]
+        config_path = f'tanha/{message.from_user.id}.conf'
+    else:
+        config_path = 'rcl.conf'
+
+    if not await aiopath.exists(config_path):
+        await sendMessage(message, f"Rclone Config: {config_path} not Exists!")
+        return
+
+    if dst_path == 'rcl' or config_dict['RCLONE_PATH'] == 'rcl':
+        dst_path = await RcloneList(client, message).get_rclone_path('rcu', config_path)
+        if not is_rclone_path(dst_path):
+            await sendMessage(message, dst_path)
+            return
+
+    dst_path = (dst_path or config_dict['RCLONE_PATH']).strip('/')
+    if not is_rclone_path(dst_path):
+        await sendMessage(message, 'Given Wrong RClone Destination!')
+        return
+    if dst_path.startswith('mrcc:'):
+        if config_path != f'tanha/{message.from_user.id}.conf':
+            await sendMessage(message, 'You should use same rcl.conf to clone between pathies!')
+            return
+        dst_path = dst_path.lstrip('mrcc:')
+    elif config_path != 'rcl.conf':
+        await sendMessage(message, 'You should use same rcl.conf to clone between pathies!')
+        return
+
+    remote, src_path = link.split(':', 1)
+    src_path = src_path.strip('/')
+
+    cmd = ['zcl', 'lsjson', '--fast-list', '--stat', '--no-modtime', '--config', config_path, f'{remote}:{src_path}']
+    res = await cmd_exec(cmd)
+    if res[2] != 0:
+        if res[2] != -9:
+            msg = f'Error: While getting RClone Stats. Path: {remote}:{src_path}. Stderr: {res[1][:4000]}'
+            await sendMessage(message, msg)
+        return
+    rstat = loads(res[0])
+    if rstat['IsDir']:
+        name = src_path.rsplit('/', 1)[-1] if src_path else remote
+        dst_path += name if dst_path.endswith(':') else f'/{name}'
+        mime_type = 'Folder'
+    else:
+        name = src_path.rsplit('/', 1)[-1]
+        mime_type = rstat['MimeType']
+
+    listener = MirrorLeechListener(message, tag=tag)
+    await listener.onDownloadStart()
+
+    RCTransfer = RcloneTransferHelper(listener, name)
+    LOGGER.info(f'Clone Started: Name: {name} - Source: {link} - Destination: {dst_path}')
+    gid = token_hex(4)
+    async with download_dict_lock:
+        download_dict[message.id] = RcloneStatus(RCTransfer, message, gid, 'cl')
+    await sendStatusMessage(message)
+    link, destination = await RCTransfer.clone(config_path, remote, src_path, dst_path, rcf, mime_type)
+    if not link:
+        return
+    LOGGER.info(f'Cloning Done: {name}')
+    cmd1 = ['zcl', 'lsf', '--fast-list', '-R',
+            '--files-only', '--config', config_path, destination]
+    cmd2 = ['zcl', 'lsf', '--fast-list', '-R',
+            '--dirs-only', '--config', config_path, destination]
+    cmd3 = ['zcl', 'size', '--fast-list', '--json',
+            '--config', config_path, destination]
+    res1, res2, res3 = await gather(cmd_exec(cmd1), cmd_exec(cmd2), cmd_exec(cmd3))
+    if res1[2] != res2[2] != res3[2] != 0:
+        if res1[2] == -9:
+            return
+        files = None
+        folders = None
+        size = 0
+        LOGGER.error(f'Error: While getting RClone Stats. Path: {destination}. Stderr: {res1[1][:4000]}')
+    else:
+        files = len(res1[0].split("\n"))
+        folders = len(res2[0].split("\n"))
+        rsize = loads(res3[0])
+        size = rsize['bytes']
+    await listener.onUploadComplete(link, size, files, folders, mime_type, name, destination)
 
 
-class gdClone(GoogleDriveHelper):
-
-    def __init__(self, name, listener):
-        self.listener = listener
-        super().__init__(listener, name)
-        self.is_cloning = True
-        self.__start_time = time()
-
-    def clone(self, link, gdrive_id):
-        if not gdrive_id:
-            gdrive_id = config_dict['GDRIVE_ID']
+async def gdcloneNode(message, link, listen_up):
+    if not is_gdrive_link(link) and is_share_link(link):
+        process_msg = await sendMessage(message, f"<b>Processing Link:</b> <code>{link}</code>")
         try:
-            file_id = self.getIdFromUrl(link)
-        except (KeyError, IndexError):
-            return "Google Drive ID could not be found in the provided link"
-        msg = ""
-        LOGGER.info(f"File ID: {file_id}")
-        try:
-            meta = self.getFileMetadata(file_id)
-            mime_type = meta.get("mimeType")
-            if mime_type == self.G_DRIVE_DIR_MIME_TYPE:
-                dir_id = self.create_directory(meta.get('name'), gdrive_id)
-                self.__cloneFolder(meta.get('name'), meta.get('id'), dir_id)
-                durl = self.G_DRIVE_DIR_BASE_DOWNLOAD_URL.format(dir_id)
-                if self.is_cancelled:
-                    LOGGER.info("Deleting cloned data from Drive...")
-                    self.service.files().delete(fileId=dir_id, supportsAllDrives=True).execute()
-                    LOGGER.info("Successfully deleted cloned data from Drive.")
-                    return None, None, None, None, None, None
-                mime_type = 'Folder'
-                size = self.proc_bytes
-            else:
-                file = self.__copyFile(meta.get('id'), gdrive_id)
-                msg += f'<b>Name: </b><code>{file.get("name")}</code>'
-                durl = self.G_DRIVE_BASE_DOWNLOAD_URL.format(file.get("id"))
-                if mime_type is None:
-                    mime_type = 'File'
-                size = int(meta.get('size', 0))
-            return durl, size, mime_type, self.total_files, self.total_folders, self.getIdFromUrl(durl)
-        except Exception as err:
-            if isinstance(err, RetryError):
-                LOGGER.info(f"Total Attempts: {err.last_attempt.attempt_number}")
-                err = err.last_attempt.exception()
-            err = str(err).replace('>', '').replace('<', '')
-            if "User rate limit exceeded" in err:
-                msg = "User rate limit exceeded."
-            elif "File not found" in err:
-                if not self.alt_auth:
-                    token_service = self.alt_authorize()
-                    if token_service is not None:
-                        LOGGER.error('File not found. Trying with token.pickle...')
-                        self.service = token_service
-                        return self.clone(link, gdrive_id)
-                msg = "File not found."
-            else:
-                msg = f"Error.\n{err}"
-            async_to_sync(self.listener.onUploadError, msg)
-            return None, None, None, None, None, None
+            link = await sync_to_async(direct_link_generator, link)
+            LOGGER.info(f"Generated link: {link}")
+            await editMessage(process_msg, f"<b>Generated Link:</b> <code>{link}</code>")
+        except DirectDownloadLinkException as e:
+            LOGGER.error(str(e))
+            if str(e).startswith('ERROR:'):
+                await editMessage(process_msg, str(e))
+                await delete_links(message)
+                await one_minute_del(process_msg)
+                return
+        await deleteMessage(process_msg)
+    if is_gdrive_link(link):
+        gd = GoogleDriveHelper()
+        name, mime_type, size, files, _ = await sync_to_async(gd.count, link)
+        if mime_type is None:
+            await sendMessage(message, name)
+            return
+        if config_dict['STOP_DUPLICATE']:
+            LOGGER.info('Checking File/Folder if already in Drive...')
+            telegraph_content, contents_no = await sync_to_async(gd.drive_list, name, True, True)
+            if telegraph_content:
+                msg = f'File/Folder is already available in Drive.\nHere are {contents_no} list results:'
+                button = await get_telegraph_list(telegraph_content)
+                await sendMessage(message, msg, button)
+                return
+        listener = MirrorLeechListener(message, tag=listen_up[0], isClone=True, drive_id=listen_up[1], index_link=listen_up[2])
+        if limit_exceeded := await limit_checker(size, listener):
+            await listener.onUploadError(limit_exceeded)
+            return
+        await listener.onDownloadStart()
+        LOGGER.info(f'Clone Started: Name: {name} - Source: {link}')
+        drive = GoogleDriveHelper(name, listener=listener)
+        if files <= 20:
+            msg = await sendMessage(message, f"<b>Cloning:</b> <code>{link}</code>")
+            link, size, mime_type, files, folders = await sync_to_async(drive.clone, link, listener.drive_id)
+            await deleteMessage(msg)
+        else:
+            gid = token_hex(4)
+            async with download_dict_lock:
+                download_dict[message.id] = GdriveStatus(drive, size, message, gid, 'cl')
+            await sendStatusMessage(message)
+            link, size, mime_type, files, folders = await sync_to_async(drive.clone, link, listener.drive_id)
+        if not link:
+            return
+        LOGGER.info(f'Cloning Done: {name}')
+        await listener.onUploadComplete(link, size, files, folders, mime_type, name)
+    else:
+        reply_message = await sendMessage(message, CLONE_HELP_MESSAGE)
+        await deleteMessage(message)
+        await one_minute_del(reply_message)
 
-    def __cloneFolder(self, folder_name, folder_id, dest_id):
-        LOGGER.info(f"Syncing: {folder_name}")
-        files = self.getFilesByFolderId(folder_id)
-        if len(files) == 0:
-            return dest_id
-        for file in files:
-            if file.get("mimeType") == self.G_DRIVE_DIR_MIME_TYPE:
-                self.total_folders += 1
-                file_path = ospath.join(folder_name, file.get("name"))
-                current_dir_id = self.create_directory(file.get("name"), dest_id)
-                self.__cloneFolder(file_path, file.get("id"), current_dir_id)
-            elif not file.get("name").lower().endswith(tuple(GLOBAL_EXTENSION_FILTER)):
-                self.total_files += 1
-                self.__copyFile(file.get("id"), dest_id)
-                self.proc_bytes += int(file.get("size", 0))
-                self.total_time = int(time() - self.__start_time)
-            if self.is_cancelled:
-                break
 
-    @retry(wait=wait_exponential(multiplier=2, min=3, max=6), stop=stop_after_attempt(3),
-           retry=retry_if_exception_type(Exception))
-    def __copyFile(self, file_id, dest_id):
-        body = {'parents': [dest_id]}
-        try:
-            return self.service.files().copy(fileId=file_id, body=body, supportsAllDrives=True).execute()
-        except HttpError as err:
-            if err.resp.get('content-type', '').startswith('application/json'):
-                reason = eval(err.content).get('error').get('errors')[0].get('reason')
-                if reason not in ['userRateLimitExceeded', 'dailyLimitExceeded', 'cannotCopyFile']:
-                    raise err
-                if reason == 'cannotCopyFile':
-                    LOGGER.error(err)
-                elif config_dict['USE_SERVICE_ACCOUNTS']:
-                    if reason == 'userRateLimitExceeded':
-                        sleep(30)
-                    if self.sa_count >= self.sa_number:
-                        LOGGER.info(f"Reached maximum number of service accounts switching, which is {self.sa_count}")
-                        raise err
-                    else:
-                        if self.is_cancelled:
-                            return
-                        self.switchServiceAccount()
-                        return self.__copyFile(file_id, dest_id)
-                else:
-                    LOGGER.error(f"Got: {reason}")
-                    raise err
+@new_task
+async def clone(client, message):
+    input_list = message.text.split(' ')
+    arg_base   = {'link'   : '', 
+                  '-i'     : '0', 
+                  '-up'    : '',
+                  '-rcf'   : '',
+                  '-id'    : '',
+                  '-index' : ''}
+    args       = arg_parser(input_list[1:], arg_base)
+    i          = args['-i']
+    dst_path   = args['-up']
+    rcf        = args['-rcf']
+    link       = args['link']
+    drive_id   = args['-id']
+    index_link = args['-index']
+    multi      = int(i) if i.isdigit() else 0
+    
+    if username := message.from_user.username:
+        tag = f"@{username}"
+    else:
+        tag = message.from_user.mention
+    if not link and (reply_to := message.reply_to_message):
+        link = reply_to.text.split('\n', 1)[0].strip()
+
+    @new_task
+    async def __run_multi():
+        if multi > 1:
+            await sleep(5)
+            msg = [s.strip() for s in input_list]
+            index = msg.index('-i')
+            msg[index+1] = f"{multi - 1}"
+            nextmsg = await client.get_messages(chat_id=message.chat.id, message_ids=message.reply_to_message_id + 1)
+            nextmsg = await sendMessage(nextmsg, " ".join(msg))
+            nextmsg = await client.get_messages(chat_id=message.chat.id, message_ids=nextmsg.id)
+            nextmsg.from_user = message.from_user
+            await sleep(5)
+            clone(client, nextmsg)
+
+    __run_multi()
+
+    if drive_id and is_gdrive_link(drive_id):
+        drive_id = GoogleDriveHelper.getIdFromUrl(drive_id)
+
+    if len(link) == 0:
+        reply_message = await sendMessage(message, CLONE_HELP_MESSAGE)
+        await deleteMessage(message)
+        await one_minute_del(reply_message)
+        return
+
+    error_msg = []
+    error_button = None
+    if await nsfw_precheck(message):
+    	  error_msg.extend(['NSFW detected'])
+    task_utilis_msg, error_button = await task_utils(message)
+    if task_utilis_msg:
+        error_msg.extend(task_utilis_msg)
+    if error_msg:
+        final_msg = f'Hey, <b>{tag}</b>!\n'
+        for __i, __msg in enumerate(error_msg, 1):
+            final_msg += f'\n<b>{__i}</b>: {__msg}\n'
+        if error_button is not None:
+            error_button = error_button.build_menu(2)
+        await delete_links(message)
+        force_m = await sendMessage(message, final_msg, error_button)
+        await five_minute_del(force_m)
+        return
+
+    if is_rclone_path(link):
+        if not await aiopath.exists('rcl.conf') and not await aiopath.exists(f'tanha/{message.from_user.id}.conf'):
+            await sendMessage(message, 'Rclone Config Not exists!')
+            return
+        if not config_dict['RCLONE_PATH'] and not dst_path:
+            await sendMessage(message, 'Destination not specified!')
+            await delete_links(message)
+            return
+        await rcloneNode(client, message, link, dst_path, rcf, tag)
+    else:
+        user_tds = await fetch_user_tds(message.from_user.id)
+        if not drive_id and len(user_tds) == 1:
+            drive_id, index_link = next(iter(user_tds.values())).values()
+        if drive_id and not await sync_to_async(GoogleDriveHelper().getFolderData, drive_id):
+            return await sendMessage(message, "Google Drive ID validation failed!!")
+        if not config_dict['GDRIVE_ID'] and not drive_id:
+            await sendMessage(message, 'GDRIVE_ID not Provided!')
+            await delete_links(message)
+            return
+        await gdcloneNode(message, link, [tag, drive_id, index_link])
+    await delete_links(message)
+    
+bot.add_handler(MessageHandler(clone, filters=command(
+    BotCommands.CloneCommand) & CustomFilters.authorized))

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from aiofiles import open as aiopen
 from aiofiles.os import remove
 

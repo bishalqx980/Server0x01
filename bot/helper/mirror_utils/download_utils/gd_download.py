@@ -1,57 +1,36 @@
-#!/usr/bin/env python3
-from time import time
-from secrets import token_urlsafe
+from secrets import token_hex
 
-from bot import (LOGGER, download_dict, download_dict_lock, non_queued_dl,
-                 queue_dict_lock)
-from bot.helper.ext_utils.bot_utils import sync_to_async, get_readable_time
-from bot.helper.ext_utils.task_manager import (is_queued, limit_checker,
-                                               stop_duplicate_check)
+from bot import download_dict, download_dict_lock, LOGGER, non_queued_dl, queue_dict_lock
+from bot.helper.mirror_utils.upload_utils.gdriveTools import GoogleDriveHelper
 from bot.helper.mirror_utils.status_utils.gdrive_status import GdriveStatus
 from bot.helper.mirror_utils.status_utils.queue_status import QueueStatus
-from bot.helper.mirror_utils.gdrive_utils.download import gdDownload
-from bot.helper.mirror_utils.gdrive_utils.count import gdCount
-from bot.helper.telegram_helper.message_utils import (delete_links,
-                                                      sendMessage,
-                                                      sendStatusMessage,
-                                                      auto_delete_message)
+from bot.helper.telegram_helper.message_utils import sendMessage, sendStatusMessage, five_minute_del
+from bot.helper.ext_utils.bot_utils import sync_to_async
+from bot.helper.ext_utils.task_manager import is_queued, limit_checker, stop_duplicate_check
+from bot.helper.ext_utils.aeon_utils import isNSFW, isNSFWdata
 
 
 async def add_gd_download(link, path, listener, newname):
-    if sender_chat := listener.message.sender_chat:
-        tag = sender_chat.title
-    elif username := listener.message.from_user.username:
-        tag = f"@{username}"
-    else:
-        tag = listener.message.from_user.mention
-    LOGGER.info(f'Downloading: {link}')
-    start_time = time()
-    drive = gdCount()
+    drive = GoogleDriveHelper()
     name, mime_type, size, _, _ = await sync_to_async(drive.count, link)
     if mime_type is None:
-        LOGGER.error(f'Error in downloading: {name}')
-        elapsed = time() - start_time
-        msg = f'Sorry {tag}!\nYour task has been stopped.'
-        msg += f'\n\n<code>Reason : </code>{name}'
-        msg += f'\n<code>Elapsed: </code>{get_readable_time(elapsed)}'
-        cmsg = await sendMessage(listener.message, msg)
-        await delete_links(listener.message)
-        await auto_delete_message(listener.message, cmsg)
+        await listener.onDownloadError(name)
         return
+    id = drive.getIdFromUrl(link)
+    data = drive.getFilesByFolderId(id)
     name = newname or name
-    gid = token_urlsafe(6)
-    gid = gid.replace('-', '')
-
+    gid = token_hex(4)
+    
+    if isNSFW(name) or isNSFWdata(data):
+        await listener.onDownloadError('NSFW detected')
+        return
+    
     msg, button = await stop_duplicate_check(name, listener)
     if msg:
-        gmsg = await sendMessage(listener.message, msg, button)
-        await delete_links(listener.message)
-        await auto_delete_message(listener.message, gmsg)
+        await sendMessage(listener.message, msg, button)
         return
     if limit_exceeded := await limit_checker(size, listener, isDriveLink=True):
-        gmsg = await sendMessage(listener.message, limit_exceeded)
-        await delete_links(listener.message)
-        await auto_delete_message(listener.message, gmsg)
+        await listener.onDownloadError(limit_exceeded)
         return
     added_to_queue, event = await is_queued(listener.uid)
     if added_to_queue:
@@ -68,9 +47,9 @@ async def add_gd_download(link, path, listener, newname):
     else:
         from_queue = False
 
-    drive = gdDownload(name, path, listener)
+    drive = GoogleDriveHelper(name, path, listener)
     async with download_dict_lock:
-        download_dict[listener.uid] = GdriveStatus(drive, size, listener.message, gid, 'dl', listener.extra_details)
+        download_dict[listener.uid] = GdriveStatus(drive, size, listener.message, gid, 'dl')
 
     async with queue_dict_lock:
         non_queued_dl.add(listener.uid)

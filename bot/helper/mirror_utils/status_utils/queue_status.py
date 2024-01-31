@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 from bot import LOGGER
-from bot.helper.ext_utils.bot_utils import MirrorStatus, get_readable_file_size
+from bot.helper.ext_utils.bot_utils import get_readable_file_size, MirrorStatus
 
 
 class QueueStatus:
@@ -10,9 +9,7 @@ class QueueStatus:
         self.__gid = gid
         self.__listener = listener
         self.__status = status
-        self.message = self.__listener.message
-        self.extra_details = self.__listener.extra_details
-        self.engine = "Queue v2.2"
+        self.message = listener.message
 
     def gid(self):
         return self.__gid
@@ -45,7 +42,7 @@ class QueueStatus:
 
     async def cancel_download(self):
         LOGGER.info(f'Cancelling Queue{self.__status}: {self.__name}')
-        if self.__status == 'Dl':
+        if self.__status == 'dl':
             await self.__listener.onDownloadError('task have been removed from queue/download')
         else:
             await self.__listener.onUploadError('task have been removed from queue/upload')

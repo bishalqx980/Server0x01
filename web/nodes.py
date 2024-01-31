@@ -1,13 +1,6 @@
-from os import environ
-from re import findall
 from anytree import NodeMixin
-
-DOWNLOAD_DIR = environ.get('DOWNLOAD_DIR', '')
-if len(DOWNLOAD_DIR) == 0:
-    DOWNLOAD_DIR = '/usr/src/app/downloads/'
-elif not DOWNLOAD_DIR.endswith("/"):
-    DOWNLOAD_DIR = f'{DOWNLOAD_DIR}/'
-
+from re import findall as re_findall
+from os import environ
 
 class TorNode(NodeMixin):
     def __init__(self, name, is_folder=False, is_file=False, parent=None, size=None, priority=None, file_id=None, progress=None):
@@ -19,7 +12,7 @@ class TorNode(NodeMixin):
         if parent is not None:
             self.parent = parent
         if size is not None:
-            self.fsize = size
+            self.size = size
         if priority is not None:
             self.priority = priority
         if file_id is not None:
@@ -32,7 +25,7 @@ def qb_get_folders(path):
     return path.split("/")
 
 def get_folders(path):
-    fs = findall(f'{DOWNLOAD_DIR}[0-9]+/(.+)', path)[0]
+    fs = re_findall('/usr/src/app/downloads/[0-9]+/(.+)', path)[0]
     return fs.split('/')
 
 def make_tree(res, aria2=False):
@@ -74,13 +67,6 @@ def make_tree(res, aria2=False):
                         file_id=i['index'], progress=round((int(i['completedLength'])/int(i['length']))*100, 5))
     return create_list(parent, ["", 0])
 
-"""
-def print_tree(parent):
-    for pre, _, node in RenderTree(parent):
-        treestr = u"%s%s" % (pre, node.name)
-        print(treestr.ljust(8), node.is_folder, node.is_file)
-"""
-
 def create_list(par, msg):
     if par.name != ".unwanted":
         msg[0] += '<ul>'
@@ -95,9 +81,9 @@ def create_list(par, msg):
         else:
             msg[0] += '<li>'
             if i.priority == 0:
-                msg[0] += f'<input type="checkbox" name="filenode_{i.file_id}" data-size="{i.fsize}"> <label data-size="{i.fsize}" for="filenode_{i.file_id}">{i.name}</label> / {i.progress}%'
+                msg[0] += f'<input type="checkbox" name="filenode_{i.file_id}" data-size="{i.size}"> <label data-size="{i.size}" for="filenode_{i.file_id}">{i.name}</label> / {i.progress}%'
             else:
-                msg[0] += f'<input type="checkbox" checked name="filenode_{i.file_id}" data-size="{i.fsize}"> <label data-size="{i.fsize}" for="filenode_{i.file_id}">{i.name}</label> / {i.progress}%'
+                msg[0] += f'<input type="checkbox" checked name="filenode_{i.file_id}" data-size="{i.size}"> <label data-size="{i.size}" for="filenode_{i.file_id}">{i.name}</label> / {i.progress}%'
             msg[0] += f'<input type="hidden" value="off" name="filenode_{i.file_id}">'
             msg[0] += "</li>"
 

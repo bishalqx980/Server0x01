@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from os import walk, path as ospath
 from aiofiles.os import remove as aioremove, path as aiopath, listdir, rmdir, makedirs
 from aioshutil import rmtree as aiormtree
@@ -9,15 +8,10 @@ from subprocess import run as srun
 from sys import exit as sexit
 
 from .exceptions import NotSupportedExtractionArchive
-from bot import aria2, LOGGER, DOWNLOAD_DIR, get_client, GLOBAL_EXTENSION_FILTER
-from bot.helper.ext_utils.bot_utils import sync_to_async, cmd_exec, async_to_sync
-from bot.helper.ext_utils.telegraph_helper import telegraph
+from bot import aria2, LOGGER, get_client, GLOBAL_EXTENSION_FILTER
+from bot.helper.ext_utils.bot_utils import sync_to_async, cmd_exec
 
-
-ARCH_EXT = [".tar.bz2", ".tar.gz", ".bz2", ".gz", ".tar.xz", ".tar", ".tbz2", ".tgz", ".lzma2",
-            ".zip", ".7z", ".z", ".rar", ".iso", ".wim", ".cab", ".apm", ".arj", ".chm",
-            ".cpio", ".cramfs", ".deb", ".dmg", ".fat", ".hfs", ".lzh", ".lzma", ".mbr",
-            ".msi", ".mslz", ".nsis", ".ntfs", ".rpm", ".squashfs", ".udf", ".vhd", ".xar"]
+ARCH_EXT = [".tar.bz2", ".tar.gz", ".bz2", ".gz", ".tar.xz", ".tar", ".tbz2", ".tgz", ".lzma2", ".zip", ".7z", ".z", ".rar", ".iso", ".wim", ".cab", ".apm", ".arj", ".chm", ".cpio", ".cramfs", ".deb", ".dmg", ".fat", ".hfs", ".lzh", ".lzma", ".mbr", ".msi", ".mslz", ".nsis", ".ntfs", ".rpm", ".squashfs", ".udf", ".vhd", ".xar"]
 
 FIRST_SPLIT_REGEX = r'(\.|_)part0*1\.rar$|(\.|_)7z\.0*1$|(\.|_)zip\.0*1$|^(?!.*(\.|_)part\d+\.rar$).*\.rar$'
 
@@ -56,37 +50,31 @@ async def clean_download(path):
         LOGGER.info(f"Cleaning Download: {path}")
         try:
             await aiormtree(path)
-            LOGGER.info(f"Done cleaning: {path}")
-        except KeyError:
+        except:
             pass
 
 
 async def start_cleanup():
     get_client().torrents_delete(torrent_hashes="all")
     try:
-        await aiormtree(DOWNLOAD_DIR)
+        await aiormtree('/usr/src/app/downloads/')
     except:
         pass
-    await makedirs(DOWNLOAD_DIR, exist_ok=True)
+    await makedirs('/usr/src/app/downloads/', exist_ok = True)
 
 
 def clean_all():
     aria2.remove_all(True)
+    get_client().torrents_delete(torrent_hashes="all")
     try:
-        get_client().torrents_delete(torrent_hashes="all")
-    except:
-        pass
-    async_to_sync(telegraph.revoke_access_token)
-    try:
-        rmtree(DOWNLOAD_DIR)
+        rmtree('/usr/src/app/downloads/')
     except:
         pass
 
 
 def exit_clean_up(signal, frame):
     try:
-        LOGGER.info(
-            "Please wait, while we clean up and stop the running downloads")
+        LOGGER.info("Please wait, while we clean up and stop the running downloads")
         clean_all()
         srun(['pkill', '-9', '-f', '-e','gunicorn|buffet|openstack|render|zcl'])
         sexit(0)
@@ -101,7 +89,7 @@ async def clean_unwanted(path):
         for filee in files:
             if filee.endswith(".!qB") or filee.endswith('.parts') and filee.startswith('.'):
                 await aioremove(ospath.join(dirpath, filee))
-        if dirpath.endswith((".unwanted", "splited_files_z", "copied_z")):
+        if dirpath.endswith((".unwanted", "splited_files", "copied")):
             await aiormtree(dirpath)
     for dirpath, _, files in await sync_to_async(walk, path, topdown=False):
         if not await listdir(dirpath):
@@ -138,7 +126,8 @@ def get_base_name(orig_path):
     if extension != '':
         return re_split(f'{extension}$', orig_path, maxsplit=1, flags=I)[0]
     else:
-        raise NotSupportedExtractionArchive('File format not supported for extraction')
+        raise NotSupportedExtractionArchive(
+            'File format not supported for extraction')
 
 
 def get_mime_type(file_path):
@@ -146,6 +135,19 @@ def get_mime_type(file_path):
     mime_type = mime.from_file(file_path)
     mime_type = mime_type or "text/plain"
     return mime_type
+
+
+def check_storage_threshold(size, threshold, arch=False, alloc=False):
+    free = disk_usage('/usr/src/app/downloads/').free
+    if not alloc:
+        if (not arch and free - size < threshold or arch and free - (size * 2) < threshold):
+            return False
+    elif not arch:
+        if free < threshold:
+            return False
+    elif free - size < threshold:
+        return False
+    return True
 
 
 async def join_files(path):
@@ -160,29 +162,8 @@ async def join_files(path):
                 LOGGER.error(f'Failed to join {final_name}, stderr: {stderr}')
             else:
                 results.append(final_name)
-        else:
-            LOGGER.warning('No Binary files to join!')
     if results:
-        LOGGER.info('Join Completed!')
         for res in results:
             for file_ in files:
                 if re_search(fr"{res}\.0[0-9]+$", file_):
                     await aioremove(f'{path}/{file_}')
-
-
-def check_storage_threshold(size, threshold, arch=False, alloc=False):
-    free = disk_usage(DOWNLOAD_DIR).free
-    if not alloc:
-        if (
-            not arch
-            and free - size < threshold
-            or arch
-            and free - (size * 2) < threshold
-        ):
-            return False
-    elif not arch:
-        if free < threshold:
-            return False
-    elif free - size < threshold:
-        return False
-    return True

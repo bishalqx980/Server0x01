@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 
 class ButtonMaker:
     def __init__(self):
